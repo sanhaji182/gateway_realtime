@@ -1,4 +1,4 @@
-import { getChannelType, validateChannelName } from "./channels";
+import { getChannelType, isEncryptedChannel, validateChannelName } from "./channels";
 import { parseSocketEnvelope, type SocketEnvelope } from "./events";
 
 export type GatewayClientState = "idle" | "connecting" | "connected" | "disconnected" | "reconnecting";
@@ -120,6 +120,10 @@ export class GatewayClient {
     return this.currentSocketId;
   }
 
+  setToken(token: string) {
+    (this.options as Record<string, unknown>)._token = token;
+  }
+
   connect() {
     if (this.ws && (this.ws.readyState === this.ws.OPEN || this.ws.readyState === this.ws.CONNECTING)) return;
     this.manualDisconnect = false;
@@ -195,8 +199,13 @@ export class GatewayClient {
   }
 
   private buildUrl() {
-    const url = new URL(this.options.host);
-    url.searchParams.set("key", this.options.key);
+    let raw = this.options.host;
+    if (!raw.startsWith("ws://") && !raw.startsWith("wss://")) raw = `ws://${raw}`;
+    if (!raw.includes("/", 6)) raw += "/ws";
+    const url = new URL(raw);
+    (this.options as Record<string, unknown>)._token
+      ? url.searchParams.set("token", (this.options as Record<string, unknown>)._token as string)
+      : url.searchParams.set("key", this.options.key);
     return url.toString();
   }
 
@@ -289,7 +298,14 @@ export class GatewayClient {
     }
     if (envelope.event === "subscription_succeeded" && isRecord(envelope.data) && typeof envelope.data.channel === "string") {
       const channel = this.channels.get(envelope.data.channel);
-      if (channel) channel.state = "subscribed";
+      if (channel) {
+        channel.state = "subscribed";
+        channel.handleEvent("subscription_succeeded", envelope.data);
+      }
+    }
+    if (envelope.event === "subscription_error" && isRecord(envelope.data) && typeof envelope.data.channel === "string") {
+      const channel = this.channels.get(envelope.data.channel);
+      if (channel) channel.handleEvent("subscription_error", envelope.data);
     }
   }
 

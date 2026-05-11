@@ -1,42 +1,119 @@
 # Authentication
 
-## App Key & Secret
+Gateway menggunakan dua mekanisme autentikasi: **session cookie** untuk browser dan **HMAC signature** untuk backend server.
 
-Setiap app punya dua credential:
+## Dashboard Login
 
-| Credential | Visibilitas | Dipakai untuk          |
-|------------|-------------|------------------------|
-| App Key    | Public      | Subscribe (frontend)   |
-| App Secret | Private     | Publish (backend only) |
+Akses dashboard via browser memerlukan login dengan credential:
 
-<Callout type="warning">
-  App Secret **tidak boleh** di-expose di frontend code atau git repository.
-  Gunakan environment variable.
-</Callout>
+| Role   | Email                 | Password |
+|--------|-----------------------|----------|
+| Admin  | admin@gateway.local   | password |
+| Viewer | viewer@gateway.local  | password |
 
-## WebSocket Auth
+Setelah login, cookie `gateway_session` diset dan dipakai untuk semua request API dari browser dashboard.
 
-Saat koneksi dibuat, gateway memvalidasi App Key:
+## REST API Authentication
 
-```
-wss://gateway.internal/app/pk_live_a1b2c?version=1
-```
+Backend server yang publish event wajib mengirim **HMAC signature** dengan format:
 
-Untuk private channel, kirim auth token saat subscribe:
+### 1. Siapkan App Key + Secret
+
+Setiap aplikasi terdaftar mendapat pasangan credentials:
+
+| Field  | Format | Contoh |
+|--------|--------|--------|
+| App Key | `pk_live_xxxxx` | `pk_live_a1b2c3` |
+| App Secret | `sk_live_xxxxx` | `sk_live_dev_secret_a1b2c3` |
+
+### 2. Generate Signature
+
+Signature adalah `HMAC-SHA256(app_secret, request_body)` dalam hex:
 
 ```js
-const channel = gw.subscribe('private-orders.99', {
-  auth: async () => {
-    const res = await fetch('/api/gateway-auth', {
-      method: 'POST',
-      body: JSON.stringify({ socket_id: gw.socketId, channel: 'private-orders.99' })
-    })
-    return res.json() // { auth: "pk_live_...:sha256signature" }
-  }
-})
+// Node.js
+const body = JSON.stringify({ channel: "orders.99", event: "order.paid", data: {...} });
+const sig = crypto.createHmac("sha256", appSecret).update(body).digest("hex");
 ```
 
-## Rotate Secret
+```go
+// Go
+func sign(body, secret string) string {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write([]byte(body))
+    return hex.EncodeToString(mac.Sum(nil))
+}
+```
 
-Bila secret bocor: Dashboard → Apps → [nama app] → **Rotate Secret**.
-Semua koneksi yang menggunakan secret lama akan ditolak saat reconnect.
+```php
+// Laravel / PHP
+$body = json_encode(['channel' => 'orders.99', 'event' => 'order.paid', 'data' => [...]]);
+$sig = hash_hmac('sha256', $body, env('GW_APP_SECRET'));
+```
+
+```python
+# Python
+import hmac, hashlib
+body = json.dumps({"channel": "orders.99", "event": "order.paid", "data": {...}})
+sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
+```
+
+### 3. Kirim Request
+
+```bash
+POST /api/v1/events
+X-App-Key: pk_live_a1b2c3
+X-Signature: ab12cd34ef56...
+Content-Type: application/json
+
+{"channel":"orders.99","event":"order.paid","data":{"order_id":99}}
+```
+
+## WebSocket Authentication
+
+WebSocket connection memerlukan JWT token di query string:
+
+```
+ws://gateway.internal:4000/ws?token=<JWT>
+```
+
+Token dibuat oleh aplikasi backend menggunakan secret yang sama dengan Go gateway:
+
+```go
+// Go — generate JWT untuk WebSocket client
+token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+    "sub":  userId,
+    "role": role,
+    "iat":  time.Now().Unix(),
+    "exp":  time.Now().Add(24 * time.Hour).Unix(),
+})
+signedToken, _ := token.SignedString([]byte(jwtSecret))
+// Kirim signedToken ke frontend; frontend connect: ws://gateway/ws?token=<signedToken>
+```
+
+Untuk development, gunakan endpoint `GET /api/socket/token` yang auto-generate JWT dev.
+
+## Private Channel Authorization
+
+Channel `private-*` dan `presence-*` memerlukan auth signature saat subscribe dari frontend.
+
+```js
+const channel = client.subscribe("private-orders.99", {
+  auth: async () => {
+    const res = await fetch("/api/socket/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ socket_id: client.socketId, channel_name: "private-orders.99" })
+    });
+    return res.json();
+  }
+});
+```
+
+## Security Best Practices
+
+- **Jangan hardcode secret** — pakai environment variable atau secrets manager
+- **Rotate secret** secara berkala lewat halaman App Detail di dashboard
+- **Gunakan HTTPS** di production — `wss://` untuk WebSocket
+- **Batasi `ALLOWED_ORIGINS`** di environment variable Go gateway
+- **JWT expiry** — set waktu kadaluarsa yang masuk akal (1-24 jam)

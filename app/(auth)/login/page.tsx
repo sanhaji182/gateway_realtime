@@ -1,59 +1,46 @@
-// File ini merender halaman login publik dengan form email/password dan toggle tema. Dipakai sebelum user masuk ke dashboard.
 "use client";
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-// LoginPage merender form autentikasi. State error/isLoading dikelola lokal karena hanya relevan selama submit login berlangsung.
 export default function LoginPage() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // handleLogin dipicu saat form submit. Async diperlukan karena endpoint login men-set cookie HttpOnly sebelum redirect ke dashboard.
-  async function handleLogin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setLoading(true);
     setError("");
-    setIsLoading(true);
-
-    const formData = new FormData(event.currentTarget);
-    // fetch ini mengirim credential ke API auth. Jika gagal, error ditampilkan inline sesuai spec login tanpa toast.
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email: formData.get("email"), password: formData.get("password") }),
-      headers: { "Content-Type": "application/json" }
-    });
-
-    setIsLoading(false);
-
-    if (!response.ok) {
-      setError("Email or password is incorrect");
-      return;
-    }
-
-    router.push("/overview");
+    try {
+      const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }) });
+      if (!res.ok) { setError("Invalid credentials"); return; }
+      router.push("/overview");
+    } catch { setError("Network error. Try again."); }
+    finally { setLoading(false); }
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-canvas px-4 py-10">
-      <div className="absolute right-4 top-4"><ThemeToggle /></div>
-      <section className="w-full max-w-[400px] rounded-md border bg-surface1 p-6">
-        <div className="mb-6">
-          <div className="text-base font-semibold text-primary">Event Gateway</div>
-          <div className="mt-1 text-sm text-muted">Sign in to continue</div>
+    <div className="flex h-screen items-center justify-center bg-base">
+      <div className="w-full max-w-[340px] rounded border bg-surface p-6 shadow-sm">
+        <div className="mb-6 text-center">
+          <h1 className="text-[15px] font-semibold text-primary">Marketlytics</h1>
+          <p className="mt-1 text-[12px] text-muted">Sign in to your dashboard</p>
         </div>
-        <form className="space-y-4" onSubmit={handleLogin}>
-          <Input type="email" name="email" label="Email" required autoComplete="email" />
-          <Input type="password" name="password" label="Password" required autoComplete="current-password" />
-          {error ? <p className="text-sm text-error">{error}</p> : null}
-          <Button type="submit" loading={isLoading} className="w-full" variant="default">
-            Sign In
-          </Button>
+        <form className="space-y-3" onSubmit={submit}>
+          <Input label="Email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@gateway.local" required />
+          <Input label="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" required />
+          {error ? <p className="text-[12px] text-error">{error}</p> : null}
+          <Button type="submit" variant="primary" loading={loading} className="w-full">Sign In</Button>
         </form>
-      </section>
-    </main>
+        <p className="mt-4 text-center text-[11px] text-muted">
+          Demo: admin@gateway.local / password
+        </p>
+      </div>
+    </div>
   );
 }

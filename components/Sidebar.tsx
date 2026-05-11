@@ -2,19 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, LayoutDashboard, Radio, Settings, Webhook, X, Zap, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Boxes, Radio, Search, Settings, Store, Zap, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const navItems = [
-  { href: "/overview", icon: LayoutDashboard, label: "Overview" },
-  { href: "/apps", icon: Boxes, label: "Apps" },
-  { href: "/connections", icon: Radio, label: "Connections" },
-  { href: "/events", icon: Zap, label: "Events" },
-  { href: "/webhooks", icon: Webhook, label: "Webhooks" },
-  { href: "/settings", icon: Settings, label: "Settings" }
+const items: { href: string; icon: LucideIcon; label: string; shortcut?: string }[] = [
+  { href: "/overview", icon: BarChart3, label: "Overview", shortcut: "⌘1" },
+  { href: "/apps", icon: Store, label: "Products", shortcut: "⌘2" },
+  { href: "/connections", icon: Radio, label: "Marketplaces" },
+  { href: "/events", icon: Zap, label: "Intelligence" },
+  { href: "/webhooks", icon: ArrowLeftRight, label: "Price Compare" },
+  { href: "/playground", icon: Zap, label: "Playground", shortcut: "⌘3" },
+  { href: "/settings", icon: Settings, label: "Settings", shortcut: "⌘," },
 ];
 
-function NavItem({ href, icon: Icon, label, onNavigate }: { href: string; icon: LucideIcon; label: string; onNavigate?: () => void }) {
+function NavItem({ href, icon: Icon, label, shortcut, onNavigate }: { href: string; icon: LucideIcon; label: string; shortcut?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
   const active = pathname === href || (href === "/overview" && pathname === "/");
 
@@ -22,10 +23,16 @@ function NavItem({ href, icon: Icon, label, onNavigate }: { href: string; icon: 
     <Link
       href={href}
       onClick={onNavigate}
-      className={cn("focus-ring flex h-9 items-center gap-2 rounded-sm px-3 text-sm transition-colors", active ? "bg-surface3 text-primary" : "text-muted hover:bg-surface2 hover:text-secondary")}
+      className={cn(
+        "group flex h-8 items-center gap-2.5 rounded px-2.5 text-[13px] transition-colors",
+        active
+          ? "bg-accent-subtle text-accent font-medium"
+          : "text-secondary hover:bg-hover hover:text-primary"
+      )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
-      <span>{label}</span>
+      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-accent" : "text-muted group-hover:text-secondary")} />
+      <span className="flex-1 truncate">{label}</span>
+      {shortcut ? <span className="text-[10px] text-muted">{shortcut}</span> : null}
     </Link>
   );
 }
@@ -33,21 +40,26 @@ function NavItem({ href, icon: Icon, label, onNavigate }: { href: string; icon: 
 export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   return (
     <>
-      <div className={cn("fixed inset-0 z-40 bg-black/50 md:hidden", mobileOpen ? "block" : "hidden")} onClick={onMobileClose} />
-      <aside className={cn("fixed inset-y-0 left-0 z-50 flex w-[248px] flex-col border-r bg-surface1 transition-transform md:z-40 md:translate-x-0", mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0")}>
-        <div className="flex h-16 items-center justify-between border-b px-5">
-          <div>
-            <div className="text-sm font-semibold text-primary">Event Gateway</div>
-            <div className="mt-0.5 text-xs text-muted">Realtime dashboard</div>
-          </div>
-          <button type="button" className="focus-ring rounded-sm p-1 text-muted hover:text-primary md:hidden" onClick={onMobileClose} aria-label="Close sidebar"><X className="h-4 w-4" /></button>
+      <div className={cn("fixed inset-0 z-40 bg-black/20 md:hidden", mobileOpen ? "block" : "hidden")} onClick={onMobileClose} />
+      <aside className={cn(
+        "fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-w)] flex-col border-r bg-surface transition-transform md:z-30 md:translate-x-0",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        <div className="flex h-12 items-center gap-2.5 border-b px-4">
+          <Search className="h-4 w-4 text-muted" />
+          <span className="text-[13px] font-semibold text-primary">Marketlytics</span>
+          <span className="ml-auto rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-muted">BETA</span>
         </div>
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {navItems.map((item) => <NavItem key={item.href} {...item} onNavigate={onMobileClose} />)}
+        <nav className="flex-1 space-y-0.5 px-3 py-3">
+          {items.map((item) => (
+            <NavItem key={item.href} {...item} onNavigate={onMobileClose} />
+          ))}
         </nav>
-        <div className="border-t p-4">
-          <div className="label mb-2">System Status</div>
-          <div className="flex items-center gap-2 text-sm text-secondary"><span className="h-2 w-2 rounded-full bg-success" aria-hidden /><span>Operational</span></div>
+        <div className="border-t px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success shadow-[0_0_0_2px_var(--success-subtle)]" />
+            <span className="text-[12px] text-secondary">All systems operational</span>
+          </div>
         </div>
       </aside>
     </>

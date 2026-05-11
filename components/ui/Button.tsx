@@ -1,40 +1,44 @@
-// File ini mendefinisikan Button dasar yang dipakai di seluruh dashboard. Komponen ini menjaga varian aksi, loading state, dan gaya tombol tetap konsisten.
+"use client";
+
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// buttonVariants memusatkan variasi tombol agar warna aksi default, secondary, ghost, dan destructive konsisten di semua halaman.
 const buttonVariants = cva(
-  "focus-ring inline-flex h-9 items-center justify-center rounded-sm border px-3 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center rounded text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        default: "border-accent bg-accent text-white hover:opacity-90 dark:text-[#06111d]",
-        secondary: "bg-surface2 text-secondary hover:text-primary",
-        ghost: "border-transparent bg-transparent text-muted hover:bg-surface2 hover:text-primary",
-        destructive: "border-error bg-error text-white hover:opacity-90"
-      }
+        primary: "h-8 bg-accent text-inverse px-3 hover:bg-accent-hover",
+        secondary: "h-8 border bg-surface text-secondary px-3 hover:bg-hover hover:text-primary shadow-sm",
+        ghost: "h-8 bg-transparent text-secondary px-2 hover:bg-hover hover:text-primary",
+        danger: "h-8 border border-error bg-error-subtle text-error px-3 hover:bg-error hover:text-inverse",
+      },
+      size: {
+        sm: "h-7 text-[12px] px-2.5",
+        md: "h-8 text-[13px] px-3",
+      },
     },
-    defaultVariants: { variant: "secondary" }
+    defaultVariants: { variant: "secondary", size: "md" },
   }
 );
 
-// ButtonProps menambahkan asChild untuk komposisi Radix Slot dan loading untuk mencegah submit ganda saat request async berjalan.
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
 }
 
-// Button merender tombol reusable. Props loading akan men-disable tombol dan menampilkan spinner tanpa mengubah handler pemanggil.
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant, asChild = false, loading = false, disabled, children, ...props }, ref) => {
-  const Comp = asChild ? Slot : "button";
-  return (
-    <Comp className={cn(buttonVariants({ variant }), className)} ref={ref} disabled={disabled || loading} {...props}>
-      {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-      {children}
-    </Comp>
-  );
-});
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, asChild = false, loading = false, disabled, children, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button";
+    return (
+      <Comp className={cn(buttonVariants({ variant, size }), className)} ref={ref} disabled={disabled || loading} {...props}>
+        {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+        {children}
+      </Comp>
+    );
+  }
+);
 Button.displayName = "Button";

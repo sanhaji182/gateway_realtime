@@ -6,33 +6,41 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "var(--bg-canvas)",
-        surface1: "var(--bg-surface1)",
-        surface2: "var(--bg-surface2)",
-        surface3: "var(--bg-surface3)",
+        base: "var(--bg-base)",
+        surface: "var(--bg-surface)",
+        hover: "var(--bg-hover)",
+        subtle: "var(--bg-subtle)",
         border: "var(--border)",
+        "border-strong": "var(--border-strong)",
         primary: "var(--text-primary)",
         secondary: "var(--text-secondary)",
         muted: "var(--text-muted)",
+        inverse: "var(--text-inverse)",
         accent: "var(--accent)",
-        teal: "var(--teal)",
+        "accent-subtle": "var(--accent-subtle)",
+        "accent-hover": "var(--accent-hover)",
         success: "var(--success)",
+        "success-subtle": "var(--success-subtle)",
         warning: "var(--warning)",
+        "warning-subtle": "var(--warning-subtle)",
         error: "var(--error)",
-        info: "var(--info)"
+        "error-subtle": "var(--error-subtle)",
+        info: "var(--info)",
+        "info-subtle": "var(--info-subtle)",
+        teal: "var(--teal)",
+        "teal-subtle": "var(--teal-subtle)",
       },
       borderRadius: {
         sm: "var(--radius-sm)",
+        DEFAULT: "var(--radius)",
         md: "var(--radius-md)",
-        lg: "var(--radius-lg)"
       },
-      fontFamily: {
-        sans: ["Inter", "Geist", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "IBM Plex Mono", "monospace"]
-      }
-    }
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;

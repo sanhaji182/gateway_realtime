@@ -2,31 +2,155 @@
 
 Base URL: `https://gateway.internal/api/v1`
 
-Auth: semua endpoint memerlukan header `Authorization: Bearer <secret>`.
+## Authentication
+
+### HMAC Signature (Production)
+
+Setiap request publish wajib menyertakan header:
+
+| Header | Value |
+|---|---|
+| `X-App-Key` | App key (contoh: `pk_live_a1b2c3`) |
+| `X-Signature` | `HMAC-SHA256(app-secret, request-body)` — hex encoded |
+
+### Session Cookie (Dashboard)
+
+Request dari browser dashboard menggunakan cookie `gateway_session`.
+
+---
 
 ## Publish Event
 
-```
-POST /events/publish
+`POST /events`
+
+**Auth:** HMAC Signature atau Session Cookie
+
+**Request body:**
+
+<APIParam name="channel" type="string" required>Nama channel target (contoh: `orders.99`).</APIParam>
+<APIParam name="event"   type="string" required>Nama event (contoh: `order.paid`).</APIParam>
+<APIParam name="data"    type="object" required>Payload bebas, max 10KB.</APIParam>
+<APIParam name="socket_id" type="string">Exclude sender dari broadcast.</APIParam>
+
+**Response (200):**
+```json
+{}
 ```
 
-<APIParam name="app_id"  type="string"  required>ID aplikasi.</APIParam>
-<APIParam name="channel" type="string"  required>Nama channel target.</APIParam>
-<APIParam name="event"   type="string"  required>Nama event (dot-notation).</APIParam>
-<APIParam name="data"    type="object"  required>Payload bebas, max 10KB.</APIParam>
+**Error responses:**
+| Status | Meaning |
+|---|---|
+| `400` | Invalid request body |
+| `401` | Missing authentication |
+| `403` | Invalid HMAC signature |
+| `422` | Invalid event name or payload |
+
+---
+
+## Publish Batch
+
+`POST /events/batch`
+
+**Auth:** HMAC Signature
+
+**Request body:**
+```json
+{
+  "batch": [
+    { "channel": "...", "event": "...", "data": {...} },
+    ...
+  ]
+}
+```
+Max 100 events per batch.
+
+**Response (200):**
+```json
+{ "published": 3, "failed": 0, "results": [...] }
+```
+
+---
+
+## List Events
+
+`GET /events`
+
+Query params: `search`, `app_id`, `channel`, `event`, `status`, `range`, `page`, `per_page`.
+
+Response: `EventItem[]`
+
+---
+
+## Get Event Detail
+
+`GET /events/:id`
+
+Response: `EventDetail` — includes `payload`, `source`, `size_bytes`, `request_id`, `published_at`.
+
+---
 
 ## List Apps
 
-```
-GET /apps
-```
+`GET /apps`
 
-Query params: `status`, `page`, `per_page`.
+Query params: `search`, `status`, `sort`, `page`, `per_page`.
+
+Response: `AppListItem[]`
+
+---
 
 ## Get App Detail
 
-```
-GET /apps/:id
-```
+`GET /apps/:id`
 
-Lihat dokumentasi Apps lengkap di file `07-api-spec.md` untuk semua endpoint dan response shape.
+Response: `AppDetail` — includes `key`, `allowed_origins`, `webhook_endpoints`, `created_at`.
+
+---
+
+## App Stats
+
+`GET /apps/:id/stats`
+
+Response: `AppStats` — includes `peak_connections`, `top_channels`.
+
+---
+
+## Rotate App Secret
+
+`POST /apps/:id/rotate-secret`
+
+Response: `{ "secret": "sk_live_new_secret" }`
+
+---
+
+## Webhook Logs
+
+`GET /webhooks/logs`
+
+Query params: `search`, `app_id`, `endpoint`, `status`, `range`, `page`, `per_page`.
+
+---
+
+`GET /webhooks/logs/:id`
+
+Response: `WebhookLogDetail` — includes `request`, `response`, `error`, `attempts`.
+
+---
+
+`POST /webhooks/logs/:id/retry`
+
+Response: `{ "new_log_id": "whl_99" }`
+
+---
+
+## Settings
+
+`GET /settings`
+
+`PATCH /settings`
+
+---
+
+`GET /settings/environment`
+
+Response: `EnvironmentInfo` — `gateway_version`, `go_version`, `redis_version`, `uptime_seconds`.

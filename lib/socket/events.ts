@@ -4,6 +4,7 @@ export type SocketEventMeta = {
   source?: string;
   request_id?: string;
   trace_id?: string;
+  socket_id?: string;
 };
 
 export type SocketEventEnvelope<TData = unknown> = {

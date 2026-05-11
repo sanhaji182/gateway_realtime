@@ -1,51 +1,176 @@
 # Publishing Events
 
-## Via REST API
+Publish events from your backend to all connected WebSocket clients.
+
+## REST API
+
+### Single Event
+
+`POST /api/v1/events`
+
+**Authentication:** Required — either HMAC signature or session cookie.
+
+#### Option A: HMAC Signature (Production)
+
+Setiap aplikasi terdaftar punya **app key** dan **app secret**. Backend kamu wajib menandatangani setiap request publish dengan HMAC-SHA256.
 
 ```bash
-POST /api/v1/events/publish
-Authorization: Bearer sk_live_...
+POST /api/v1/events
+X-App-Key: pk_live_a1b2c3
+X-Signature: <HMAC-SHA256(secret, request-body)>
 Content-Type: application/json
 
 {
-  "app_id":  "app_a1b2c",
   "channel": "orders.99",
-  "event":   "order.paid",
-  "data":    { "order_id": 99, "amount": 150000 }
+  "event": "order.paid",
+  "data": { "order_id": 99, "amount": 150000, "currency": "IDR" }
 }
 ```
 
-Response:
-```json
-{ "data": { "ok": true, "event_id": "evt_001", "subscribers": 3 } }
+**Cara generate signature:**
+
+```js
+// Node.js
+const crypto = require("crypto");
+const body = JSON.stringify({
+  channel: "orders.99",
+  event: "order.paid",
+  data: { order_id: 99, amount: 150000 }
+});
+const sig = crypto.createHmac("sha256", "sk_live_your_secret").update(body).digest("hex");
 ```
 
-## Via PHP SDK (CI4)
+```go
+// Go
+import "crypto/hmac"
+import "crypto/sha256"
+import "encoding/hex"
+
+func sign(body string, secret string) string {
+    mac := hmac.New(sha256.New, []byte(secret))
+    mac.Write([]byte(body))
+    return hex.EncodeToString(mac.Sum(nil))
+}
+```
 
 ```php
-// Di CI4 Controller atau Service
-$notif = new \Gateway\Client(appId: env('GW_APP_ID'), ...);
+// PHP
+$body = json_encode(["channel" => "orders.99", "event" => "order.paid", "data" => [...]]);
+$sig = hash_hmac("sha256", $body, "sk_live_your_secret");
+```
 
-// Di OrderController setelah payment confirmed
-$notif->publish('orders.' . $order->id, 'order.paid', [
-    'order_id' => $order->id,
-    'buyer_id' => $order->buyer_id,
-    'amount'   => $order->total,
-]);
+#### Option B: Session Cookie (Dashboard / Playground)
+
+Setelah login dashboard, session cookie `gateway_session` otomatis dipakai sebagai auth.
+
+```bash
+curl -X POST /api/v1/events \
+  -H "Content-Type: application/json" \
+  -H "Cookie: gateway_session=<token>" \
+  -d '{"channel":"orders.99","event":"order.paid","data":{"order_id":99}}'
+```
+
+### Response
+
+```json
+// 200 — Event published and delivered via WebSocket
+{}
+
+// 202 — Event accepted but Redis unavailable (not realtime)
+{ "warning": "accepted, redis unavailable" }
+
+// 401 — No auth provided
+{ "error": "Auth required: X-App-Key + X-Signature, or session cookie" }
+
+// 403 — Invalid signature
+{ "error": "Invalid signature" }
+```
+
+## Batch Events
+
+`POST /api/v1/events/batch`
+
+Kirim hingga 100 event dalam satu request.
+
+```bash
+POST /api/v1/events/batch
+X-App-Key: pk_live_a1b2c3
+X-Signature: <HMAC-SHA256(secret, request-body)>
+Content-Type: application/json
+
+{
+  "batch": [
+    { "channel": "orders.99", "event": "order.paid", "data": { "id": 1 } },
+    { "channel": "orders.42", "event": "order.updated", "data": { "id": 2 } },
+    { "channel": "chat.55", "event": "message.new", "data": { "text": "Hello" } }
+  ]
+}
+```
+
+**Response:**
+
+```json
+// 200 — All published
+{ "published": 3, "failed": 0, "results": [
+  { "index": 0, "status": "published" },
+  { "index": 1, "status": "published" },
+  { "index": 2, "status": "published" }
+]}
+
+// 207 — Partial success
+{ "published": 2, "failed": 1, "results": [
+  { "index": 0, "status": "published" },
+  { "index": 1, "status": "published" },
+  { "index": 2, "error": "Invalid event name" }
+]}
+```
+
+## Excluding Sender
+
+Set `socket_id` untuk mengecualikan pengirim dari broadcast (berguna untuk aplikasi chat):
+
+```json
+{
+  "channel": "chat.55",
+  "event": "message.new",
+  "data": { "text": "Hello", "user": "demo" },
+  "socket_id": "ws_a1b2c3d4"
+}
 ```
 
 ## Channel Naming
 
-| Pattern     | Contoh           | Keterangan               |
-|-------------|------------------|--------------------------|
-| `name`      | `users`          | Public channel global    |
-| `name.id`   | `orders.99`      | Channel per entity       |
-| `private-*` | `private-inbox.5`| Perlu auth saat subscribe|
-| `presence-*`| `presence-room.1`| Expose online member list|
+| Pattern     | Contoh              | Keterangan                |
+|-------------|---------------------|---------------------------|
+| `name`      | `users`             | Public channel global     |
+| `name.id`   | `orders.99`         | Channel per entity        |
+| `private-*` | `private-inbox.5`   | Perlu auth saat subscribe |
+| `presence-*` | `presence-room.1`  | Expose online member list |
+| `private-encrypted-*` | `private-encrypted-chat.1` | AES-256-GCM end-to-end |
 
-## Wildcard Subscribe
+## WebSocket SDK
 
 ```js
-// Subscribe semua event di orders.*
-gw.subscribe('orders.*').on('*', handler)
+// Browser
+import { GatewayClient } from "@/lib/socket/sdk";
+
+const client = new GatewayClient({ host: "wss://gateway.internal" });
+
+client.onConnected(({ socketId }) => {
+  console.log("Connected:", socketId);
+
+  const channel = client.subscribe("orders.99");
+  channel.bind("order.paid", (data) => {
+    console.log("Order paid:", data.order_id, data.amount);
+  });
+});
+
+client.connect();
 ```
+
+## Security Notes
+
+- **Jangan commit secret** ke repository — simpan di environment variable atau secrets manager
+- **Gunakan HTTPS** di production — WebSocket via `wss://` dan REST via `https://`
+- **Set `ALLOWED_ORIGINS`** di Go gateway untuk membatasi Origin WebSocket
+- **Rotate secret** secara berkala — dashboard menyediakan fitur rotate di halaman app detail

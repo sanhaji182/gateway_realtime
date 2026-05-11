@@ -1,40 +1,56 @@
-// File ini membungkus TanStack Table untuk tabel data-dense dashboard. Dipakai oleh halaman Apps, Connections, Events, Webhooks, dan Settings.
 "use client";
 
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
 
-// DataTableColumn menambahkan meta mono untuk kolom teknis seperti ID, IP, hash, dan request id.
 export type DataTableColumn<TData> = ColumnDef<TData> & { meta?: { mono?: boolean } };
 
-// DataTable merender tabel TanStack generik. data dan columns datang dari halaman, sementara onRowClick membuka drawer/detail sesuai konteks halaman.
-export function DataTable<TData>({ columns, data, onRowClick, className }: { columns: DataTableColumn<TData>[]; data: TData[]; onRowClick?: (row: TData) => void; className?: string }) {
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table intentionally incompatible with React Compiler memoization rules
+export function DataTable<TData>({
+  columns,
+  data,
+  onRowClick,
+  className,
+}: {
+  columns: DataTableColumn<TData>[];
+  data: TData[];
+  onRowClick?: (row: TData) => void;
+  className?: string;
+}) {
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() });
 
   return (
-    <div className={cn("overflow-auto rounded-md border bg-surface1", className)}>
-      <table className="w-full border-collapse text-left text-sm">
-        <thead className="sticky top-0 z-10 bg-surface2 text-xs uppercase tracking-[0.04em] text-muted">
-          {table.getHeaderGroups().map((headerGroup) => (
-            <tr key={headerGroup.id} className="border-b">
-              {headerGroup.headers.map((header) => (
-                <th key={header.id} className="h-10 whitespace-nowrap px-4 font-medium">
-                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+    <div className={cn("overflow-auto rounded border bg-surface shadow-sm", className)}>
+      <table className="w-full border-collapse text-left">
+        <thead>
+          {table.getHeaderGroups().map((hg) => (
+            <tr key={hg.id} className="border-b">
+              {hg.headers.map((h) => (
+                <th key={h.id} className="h-8 whitespace-nowrap px-3 text-[11px] font-medium uppercase tracking-[0.04em] text-muted">
+                  {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
                 </th>
               ))}
             </tr>
           ))}
         </thead>
         <tbody>
-          {table.getRowModel().rows.map((row, index) => (
+          {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className={cn("h-10 border-b transition-colors last:border-b-0", index % 2 === 1 && "bg-white/[0.02]", onRowClick && "cursor-pointer hover:bg-white/[0.04]")}
+              className={cn(
+                "h-9 border-b transition-colors last:border-b-0",
+                onRowClick && "cursor-pointer hover:bg-hover"
+              )}
               onClick={() => onRowClick?.(row.original)}
             >
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} title={String(cell.getValue() ?? "")} className={cn("max-w-[240px] truncate px-4 text-secondary", (cell.column.columnDef.meta as { mono?: boolean } | undefined)?.mono && "mono text-xs text-primary")}>
+                <td
+                  key={cell.id}
+                  className={cn(
+                    "max-w-[240px] truncate px-3 text-[13px] text-secondary",
+                    (cell.column.columnDef.meta as { mono?: boolean } | undefined)?.mono && "mono text-primary"
+                  )}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}

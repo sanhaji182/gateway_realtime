@@ -1,24 +1,32 @@
 "use client";
 
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useSystemAlert } from "@/hooks/useSystemAlert";
 import { cn } from "@/lib/utils";
 
 export function AlertBanner() {
-  const { alerts, dismiss } = useSystemAlert();
+  const { alerts } = useSystemAlert();
+  const latestId = alerts[0]?.id;
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!alerts.length) return null;
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setDismissed(false), [latestId]);
+
+  if (!alerts.length || dismissed) return null;
 
   return (
-    <div className="border-b bg-surface1">
-      {alerts.map((alert) => (
-        <div key={alert.id} className={cn("flex items-center justify-between gap-3 border-b px-6 py-2 text-sm last:border-b-0", alert.severity === "error" ? "border-error bg-error/10 text-error" : "border-warning bg-warning/10 text-warning")}>
-          <span>{alert.message}</span>
-          <button type="button" className="focus-ring rounded-sm p-1" aria-label="Dismiss alert" onClick={() => dismiss(alert.id)}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+    <div className={cn(
+      "flex items-center justify-between gap-3 border-b px-5 py-1.5 text-[12px]",
+      alerts[0].severity === "error" ? "bg-error-subtle text-error" : "bg-warning-subtle text-warning"
+    )}>
+      <span>{alerts[0].message}</span>
+      <button
+        type="button"
+        className="text-inherit opacity-60 hover:opacity-100"
+        onClick={() => setDismissed(true)}
+      >
+        Dismiss
+      </button>
     </div>
   );
 }

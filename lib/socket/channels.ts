@@ -1,4 +1,4 @@
-export type ChannelType = "public" | "private" | "presence" | "wildcard";
+export type ChannelType = "public" | "private" | "presence" | "wildcard" | "encrypted";
 export type SubscribeRole = "admin" | "viewer" | "user";
 
 export type ChannelInfo = {
@@ -96,3 +96,6 @@ export function toPresenceChannel(domain: string, id: string | number) {
 export function toEntityChannel(domain: string, id: string | number) {
   return assertValidChannelName(`${domain}.${id}`).name;
 }
+
+
+export function isEncryptedChannel(name: string): boolean { return name.startsWith("private-encrypted-"); }
