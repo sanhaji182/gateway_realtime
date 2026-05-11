@@ -2,6 +2,9 @@
 
 > Dokumen ini adalah catatan untuk agent yang akan membangun SaaS Control Plane di atas Gateway Core.
 > Baca seluruhnya sebelum mulai coding. Public repo tetap clean — semua SaaS code di private repo.
+>
+> **Status saat ini (12 Mei 2026):** Fase 1-4 sudah selesai. Private repo `gateway_cloud` sudah berisi
+> implementasi penuh: tenant auth, rate limiting, usage tracking, SaaS API.
 
 ---
 
@@ -9,20 +12,22 @@
 
 ```
 gateway_realtime/ (PUBLIC, MIT)        gateway_cloud/ (PRIVATE, Proprietary)
-├── app/           frontend dashboard  ├── control/       tenant mgmt, billing, usage
-├── backend_go/    WebSocket core      ├── web/           landing page, signup, billing UI
-├── lib/socket/    TypeScript SDK      ├── go.mod         → import gateway_realtime/backend_go
-└── ...                                └── worker/        event processor, analytics
+├── app/           frontend dashboard  ├── cmd/server/    cloud binary entrypoint
+├── backend_go/    WebSocket core      ├── cloud/         tenant, rate limit, usage, api
+│   └── extensions/  ← interfaces     ├── web/           Next.js SaaS frontend (coming)
+├── lib/socket/    TypeScript SDK      ├── worker/        background jobs (coming)
+└── ...                                ├── Dockerfile.cloud
+                                       └── docker-compose.prod.yml
 ```
 
 | | Open Source | SaaS (Cloud) |
 |---|---|---|
 | **Harga** | Gratis | Free tier → Pro → Enterprise |
-| **Multi-tenant** | ❌ | ✅ (tenant = project) |
-| **Rate limiting** | ❌ | ✅ (Redis token bucket) |
-| **Billing** | ❌ | ✅ (Stripe) |
+| **Multi-tenant** | ❌ | ✅ (tenant = project, X-Tenant-Key header) |
+| **Rate limiting** | ❌ | ✅ (Redis token bucket per plan) |
+| **Billing** | ❌ | ✅ (Stripe — webhook stub ready) |
 | **Usage analytics** | ❌ | ✅ |
-| **Dashboard** | Self-host | Managed + team features |
+| **Dashboard** | Self-host | Managed + team features (coming) |
 
 ---
 
@@ -32,10 +37,10 @@ gateway_realtime/ (PUBLIC, MIT)        gateway_cloud/ (PRIVATE, Proprietary)
 |---|---|
 | Control Plane API | Go (extend `gateway_realtime/backend_go`) |
 | Database | PostgreSQL (users, tenants, billing, usage) |
-| Cache | Redis (sudah ada via core) |
+| Cache | Redis (sudah ada via core — sharing instance) |
 | Billing | Stripe (Go SDK `github.com/stripe/stripe-go`) |
-| Auth SaaS | Clerk / NextAuth.js (ganti demo auth) |
-| Landing page | Next.js (satu monorepo dengan dashboard) |
+| Auth SaaS | X-Tenant-Key + X-User-ID header (v1) / Clerk next |
+| Landing page | Next.js (satu monorepo dengan dashboard — coming) |
 | Deployment | Docker Compose atau Fly.io / Railway |
 | CI/CD | GitHub Actions (terpisah dari public CI) |
 
@@ -51,7 +56,7 @@ type Authenticator interface {
     Authenticate(r *http.Request) (userID string, tenantID string, ok bool)
 }
 ```
-**SaaS implementation:** validate API key + tenant lookup dari PostgreSQL.
+**SaaS implementation:** `cloud.TenantAuthenticator` — validasi `X-Tenant-Key` header ke PostgreSQL.
 
 ### 2. RateLimiter
 ```go
@@ -59,7 +64,7 @@ type RateLimiter interface {
     Allow(tenantID string, key string, limit int) bool
 }
 ```
-**SaaS implementation:** Redis token bucket — limit dari plan tenant (free: 100/menit, pro: 10k/menit).
+**SaaS implementation:** `cloud.PlanRateLimiter` — Redis token bucket per tenant + plan.
 
 ### 3. EventHook
 ```go
@@ -71,127 +76,144 @@ type EventHook interface {
     OnDisconnect(tenantID, socketID string)
 }
 ```
-**SaaS implementation:** write ke PostgreSQL `usage_events` table untuk billing per-event.
+**SaaS implementation:** `cloud.UsageTracker` — async batch insert ke `usage_events`.
 
-### Cara Inject di SaaS Binary
+### Cara Inject di SaaS Binary (SUDAH DIIMPLEMENTASI)
 
 Di `gateway_cloud/cmd/server/main.go`:
 ```go
 import (
-    "gateway_realtime/extensions"
-    "gateway_cloud/cloud"  // SaaS implementations
+    "go-gateway/handler"    // core handler
+    "gateway_cloud/cloud"   // SaaS implementations
 )
 
 func main() {
-    main.Ext = extensions.ExtensionPoints{
-        Auth:        cloud.TenantAuthenticator{DB: db},
-        RateLimiter: cloud.PlanRateLimiter{Redis: rdb, DB: db},
-        EventHook:   cloud.UsageTracker{DB: db},
-    }
-    main() // panggil core main()
+    // ... init Redis, PostgreSQL, Hub ...
+
+    tenantAuth := cloud.TenantAuthenticator{DB: db}
+    planLimiter := cloud.PlanRateLimiter{Redis: redisClient, DB: db}
+    usageTracker := cloud.NewUsageTracker(db)
+
+    mux.Handle("/ws", handler.WSHandler{
+        Auth: tenantAuth, RateLimiter: planLimiter, EventHook: usageTracker,
+    })
+    mux.Handle("/api/socket/auth", handler.AuthHandler{
+        Auth: tenantAuth, RateLimiter: planLimiter, EventHook: usageTracker,
+    })
+
+    // SaaS routes
+    mux.HandleFunc("/api/cloud/register", cloudAPI.Register)
+    mux.HandleFunc("/api/cloud/usage", cloudAPI.Usage)
+    mux.HandleFunc("/api/cloud/tenant", cloudAPI.GetTenant)
+    mux.HandleFunc("/api/cloud/stripe/webhook", cloudAPI.StripeWebhook)
 }
 ```
 
-**Perhatian:** Jangan modifikasi `main()` di `gateway_realtime/backend_go/main.go`. Jaga variabel `Ext` yang sudah exported — tu adalah satu-satunya touchpoint.
+**Perhatian:** Jangan modifikasi `backend_go/main.go` di public repo. Inject extension di private `cmd/server/main.go` saja — touchpoint satu-satunya adalah interface di `extensions/extensions.go`.
 
 ---
 
-## Database Schema (Minimal)
+## Database Schema
+
+Sudah diimplementasikan via auto-migration (`cloud/migrate.go`):
 
 ```sql
--- Tenants
 CREATE TABLE tenants (
     id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name       TEXT NOT NULL,
     plan       TEXT NOT NULL DEFAULT 'free',  -- free, pro, enterprise
-    api_key    TEXT NOT NULL UNIQUE,
+    api_key    TEXT NOT NULL UNIQUE,           -- pk_... prefix
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Usage per tenant (untuk billing)
 CREATE TABLE usage_events (
-    id         BIGSERIAL PRIMARY KEY,
-    tenant_id  UUID REFERENCES tenants(id),
-    event_type TEXT NOT NULL,          -- publish, subscribe, connect
-    channel    TEXT,
+    id            BIGSERIAL PRIMARY KEY,
+    tenant_id     UUID REFERENCES tenants(id),
+    event_type    TEXT NOT NULL,          -- connect, disconnect, subscribe, unsubscribe, publish
+    channel       TEXT DEFAULT '',
     payload_bytes BIGINT DEFAULT 0,
-    created_at TIMESTAMPTZ DEFAULT now()
+    created_at    TIMESTAMPTZ DEFAULT now()
 );
 CREATE INDEX idx_usage_tenant_date ON usage_events(tenant_id, created_at);
-
--- Users (yang login ke SaaS dashboard)
-CREATE TABLE users (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id  UUID REFERENCES tenants(id),
-    email      TEXT NOT NULL UNIQUE,
-    role       TEXT NOT NULL DEFAULT 'member',
-    created_at TIMESTAMPTZ DEFAULT now()
-);
+CREATE INDEX idx_usage_type ON usage_events(event_type, created_at);
 ```
 
 ---
 
-## API Endpoint SaaS (Tambahan)
+## Plan Tiers
 
-| Method | Path | Function |
-|---|---|---|
-| `POST` | `/api/cloud/register` | Signup tenant + dapat API key |
-| `GET` | `/api/cloud/usage` | Usage dashboard per tenant |
-| `POST` | `/api/cloud/webhook/stripe` | Stripe webhook handler |
-| `GET` | `/api/cloud/billing` | Billing portal (Stripe Customer Portal) |
+| Tier | Events/Menit | Koneksi | Harga |
+|---|---|---|---|
+| **Free** | 100 | 5 | Gratis |
+| **Pro** | 10,000 | 1,000 | $/bulan |
+| **Enterprise** | 100,000 | 10,000 | Custom |
+
+---
+
+## API Endpoint SaaS (Sudah Implementasi)
+
+| Method | Path | Function | Status |
+|---|---|---|---|
+| `POST` | `/api/cloud/register` | Daftar tenant baru → dapat API key | ✅ Done |
+| `GET` | `/api/cloud/usage?tenant_id=X&period=24h` | Usage analytics per tenant | ✅ Done |
+| `GET` | `/api/cloud/tenant?api_key=pk_...` | Detail tenant via API key | ✅ Done |
+| `POST` | `/api/cloud/stripe/webhook` | Stripe webhook handler | 🚧 Stub — perlu verify signature |
 
 ---
 
 ## Deployment (SaaS Binary)
 
-```yaml
-# docker-compose.prod.yml — di private repo
-services:
-  postgres:
-    image: postgres:16-alpine
-  redis:
-    image: redis:7-alpine
-  gateway-cloud:
-    build:
-      context: .
-      dockerfile: Dockerfile.cloud
-    environment:
-      - DATABASE_URL=postgres://...
-      - STRIPE_SECRET_KEY=sk_live_...
-      - STRIPE_WEBHOOK_SECRET=whsec_...
+```bash
+# Di private repo gateway_cloud/
+docker compose -f docker-compose.prod.yml up -d
 ```
+
+Services di `docker-compose.prod.yml`:
+- PostgreSQL 16 (tenants, usage_events)
+- Redis 7 (pub/sub + rate limit bucket)
+- Gateway Cloud:4001 (Go binary SaaS)
 
 ---
 
 ## Checklist Agent Selanjutnya
 
-### Fase 1 — Scaffold Private Repo
-- [ ] Buat private repo `gateway_cloud`
-- [ ] Init Go module: `go mod init gateway_cloud`
-- [ ] Import core: `go get github.com/sanhaji182/gateway_realtime@v0.1.0`
-- [ ] Buat `cmd/server/main.go` yang panggil core + inject extensions
+### ✅ Fase 1 — Scaffold Private Repo (DONE)
+- [x] Buat private repo `gateway_cloud`
+- [x] Init Go module + import core
+- [x] Buat `cmd/server/main.go` — inject extensions + SaaS routes
 
-### Fase 2 — Multi-Tenant
-- [ ] Registration endpoint (email + password)
-- [ ] API key generation per tenant
-- [ ] TenantAuthenticator (read API key dari header `X-Tenant-Key`)
+### ✅ Fase 2 — Multi-Tenant (DONE)
+- [x] Registration endpoint (POST /api/cloud/register)
+- [x] API key generation per tenant (pk_ prefix, 32 hex chars)
+- [x] TenantAuthenticator (baca X-Tenant-Key + X-User-ID header)
+- [x] Auto-migration PostgreSQL schema
 
-### Fase 3 — Rate Limiting + Billing
-- [ ] PlanRateLimiter (Redis token bucket, limit per tier)
-- [ ] UsageTracker → write ke `usage_events`
-- [ ] Stripe integration (subscription, webhook)
+### ✅ Fase 3 — Rate Limiting + Billing (DONE)
+- [x] PlanRateLimiter (Redis INCR + EXPIRE token bucket)
+- [x] UsageTracker (async batch insert via buffered channel)
+- [x] Stripe webhook stub (acknowledge)
 
-### Fase 4 — SaaS Dashboard
-- [ ] Landing page (marketing) di `/`
-- [ ] Signup/login page
-- [ ] Dashboard SaaS (gabung dengan core dashboard atau terpisah)
-- [ ] Usage analytics page
+### ✅ Fase 4 — SaaS API (DONE)
+- [x] Usage analytics endpoint (GET /api/cloud/usage)
+- [x] Tenant lookup endpoint (GET /api/cloud/tenant)
+- [x] Docker Compose production (PostgreSQL + Redis + gateway-cloud)
+- [x] Dockerfile.cloud (multi-stage Go build)
+- [x] Full Go doc comments di semua file SaaS
 
-### Fase 5 — Production
+### Fase 5 — SaaS Frontend (NEXT)
+- [ ] Next.js app di `web/` — signup page, login, dashboard
+- [ ] Landing page marketing (hero, pricing, docs link)
+- [ ] Usage dashboard (chart events per tenant)
+- [ ] Tenant management UI (buat tenant, lihat API key)
+
+### Fase 6 — Production (NEXT)
 - [ ] Deploy ke Fly.io / Railway / VPS
 - [ ] Domain + SSL
-- [ ] Monitoring (Sentry, Grafana)
-- [ ] Status page (health endpoint sudah ada via core)
+- [ ] Stripe integration penuh — webhook verify signature + update plan
+- [ ] Stripe Customer Portal — billing self-service
+- [ ] Email notification (welcome, usage warning, payment receipt)
+- [ ] Monitoring (Sentry, Grafana, health endpoint)
+- [ ] Private GitHub repo → push commit
 
 ---
 
@@ -204,5 +226,5 @@ services:
 
 ## Boleh Sentuh Ini
 
-- `backend_go/main.go` — hanya jika extension injection butuh field baru
 - `backend_go/extensions/` — tambah interface jika SaaS butuh hook tambahan
+- `SaaS_ARCHITECTURE.md` — update dokumen ini saat ada perubahan arsitektur
