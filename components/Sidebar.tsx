@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeftRight, BarChart3, Boxes, Radio, Search, Settings, Store, Zap, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Bell, Boxes, Radio, Search, Settings, Store, Zap, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items: { href: string; icon: LucideIcon; label: string; shortcut?: string }[] = [
   { href: "/overview", icon: BarChart3, label: "Overview", shortcut: "⌘1" },
-  { href: "/apps", icon: Store, label: "Products", shortcut: "⌘2" },
+  { href: "/apps", icon: Boxes, label: "Products", shortcut: "⌘2" },
   { href: "/connections", icon: Radio, label: "Marketplaces" },
   { href: "/events", icon: Zap, label: "Intelligence" },
+  { href: "/orders", icon: Bell, label: "Orders", shortcut: "⌘4" },
   { href: "/webhooks", icon: ArrowLeftRight, label: "Price Compare" },
   { href: "/playground", icon: Zap, label: "Playground", shortcut: "⌘3" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "⌘," },

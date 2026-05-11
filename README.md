@@ -1,3 +1,11 @@
+# 🚀 Gateway Realtime
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![Tests](https://img.shields.io/badge/tests-28%2F28-brightgreen)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)]()
+[![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8)]()
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)]()
+
 # Gateway Realtime
 
 Self-hosted realtime event system untuk aplikasi internal — mirip Pusher, tapi berjalan di infrastruktur kamu sendiri. Dashboard Next.js 16 + Backend WebSocket Go + Redis pub/sub.
@@ -56,6 +64,19 @@ Self-hosted realtime event system untuk aplikasi internal — mirip Pusher, tapi
 | Go | ≥ 1.22 | Backend WebSocket gateway |
 | Redis | ≥ 7 | Message broker pub/sub |
 | Docker | optional | Containerized deployment |
+
+## ⚡ One-Command Setup
+
+```bash
+git clone https://github.com/sanhaji182/gateway_realtime.git
+cd gateway_realtime
+
+docker compose up
+```
+
+Buka http://localhost:3000 → login `admin@gateway.local` / `password`.
+
+---
 
 ## Quick Start (Development)
 
