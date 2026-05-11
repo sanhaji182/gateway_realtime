@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { findApp } from "@/app/api/v1/apps/data";
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) { const { id } = await params; const app = findApp(id); if (!app) return NextResponse.json({ error: { code: "NOT_FOUND", message: "App not found" } }, { status: 404 }); return NextResponse.json({ data: app }); }
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) { const { id } = await params; const app = findApp(id); if (!app) return NextResponse.json({ error: { code: "NOT_FOUND", message: "App not found" } }, { status: 404 }); const body = await request.json().catch(() => ({})); return NextResponse.json({ data: { ...app, ...body } }); }
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) { const { id } = await params; if (!findApp(id)) return NextResponse.json({ error: { code: "NOT_FOUND", message: "App not found" } }, { status: 404 }); return NextResponse.json({ data: { ok: true } }); }

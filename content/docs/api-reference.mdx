@@ -1,0 +1,32 @@
+# API Reference
+
+Base URL: `https://gateway.internal/api/v1`
+
+Auth: semua endpoint memerlukan header `Authorization: Bearer <secret>`.
+
+## Publish Event
+
+```
+POST /events/publish
+```
+
+<APIParam name="app_id"  type="string"  required>ID aplikasi.</APIParam>
+<APIParam name="channel" type="string"  required>Nama channel target.</APIParam>
+<APIParam name="event"   type="string"  required>Nama event (dot-notation).</APIParam>
+<APIParam name="data"    type="object"  required>Payload bebas, max 10KB.</APIParam>
+
+## List Apps
+
+```
+GET /apps
+```
+
+Query params: `status`, `page`, `per_page`.
+
+## Get App Detail
+
+```
+GET /apps/:id
+```
+
+Lihat dokumentasi Apps lengkap di file `07-api-spec.md` untuk semua endpoint dan response shape.

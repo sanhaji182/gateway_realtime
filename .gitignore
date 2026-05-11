@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+dist-test/
+
+# Go binaries
+backend_go/gateway-server
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Env files (jangan commit secrets)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup files
+*.bak
+*.bak2
+*.orig
+
+# Binary/doc files not needed in repo
+backend_go/*.docx

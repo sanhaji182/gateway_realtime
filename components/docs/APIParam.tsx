@@ -1,0 +1,3 @@
+export function APIParam({ name, type, required = false, children }: { name: string; type: string; required?: boolean; children: React.ReactNode }) {
+  return <div className="border-b py-3 last:border-b-0"><div className="flex flex-wrap items-center gap-2"><span className="mono text-sm text-primary">{name}</span><span className="rounded-[6px] border bg-surface3 px-1.5 py-0.5 mono text-xs text-muted">{type}</span>{required ? <span className="text-xs text-error">required</span> : <span className="text-xs text-muted">optional</span>}</div><div className="mt-2 text-sm leading-6 text-secondary">{children}</div></div>;
+}

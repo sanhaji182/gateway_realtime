@@ -1,0 +1,47 @@
+# JavaScript SDK
+
+## Install
+
+```html
+<!-- Via CDN -->
+<script src="https://gateway.internal/sdk/gateway.js"></script>
+
+<!-- Via npm -->
+npm install @internal/gateway-js
+```
+
+## Connect
+
+```js
+const gw = new GatewayClient({
+  key:  'pk_live_...',
+  host: 'wss://gateway.internal',
+  // opsional:
+  authEndpoint: '/api/gateway-auth',
+  autoReconnect: true,
+})
+```
+
+## Subscribe & Listen
+
+```js
+// Public channel
+const ch = gw.subscribe('orders.99')
+ch.on('order.paid',    (data) => { /* ... */ })
+ch.on('order.shipped', (data) => { /* ... */ })
+
+// Unsubscribe
+gw.unsubscribe('orders.99')
+```
+
+## Connection Events
+
+```js
+gw.on('connected',     ()    => console.log('WS connected'))
+gw.on('disconnected',  ()    => console.log('WS disconnected'))
+gw.on('reconnecting',  (n)   => console.log(`Reconnect attempt ${n}`))
+gw.on('error',         (err) => console.error(err))
+```
+
+## Reconnect Behavior
+Auto-reconnect dengan exponential backoff: 1s → 2s → 4s → 8s → max 30s.

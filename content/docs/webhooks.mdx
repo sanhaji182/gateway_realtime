@@ -1,0 +1,62 @@
+# Webhooks
+
+## Overview
+
+Webhook memungkinkan gateway mengirimkan HTTP request ke endpoint backend kamu setiap kali event tertentu dipublish.
+
+Berguna untuk: logging, trigger background job, notifikasi antar service.
+
+## Konfigurasi
+
+Dashboard → Apps → [nama app] → **Webhook Endpoints** → tambah endpoint.
+
+Field:
+- **URL**: endpoint yang akan di-POST.
+- **Events**: filter event (`*` untuk semua, atau spesifik seperti `order.paid`).
+- **Secret**: opsional, untuk verifikasi signature.
+
+## Payload
+
+```json
+POST https://api.internal/hook
+Content-Type: application/json
+X-Gateway-Signature: sha256=abc123...
+X-Gateway-Timestamp: 1746432001
+
+{
+  "event":   "order.paid",
+  "channel": "orders.99",
+  "app_id":  "app_a1b2c",
+  "data":    { "order_id": 99 },
+  "ts":      1746432001842
+}
+```
+
+## Verifikasi Signature
+
+```php
+$payload   = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_GATEWAY_SIGNATURE'];
+$secret    = env('GW_WEBHOOK_SECRET');
+
+$expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+
+if (!hash_equals($expected, $signature)) {
+    http_response_code(401);
+    exit;
+}
+```
+
+## Retry Policy
+
+| Attempt | Delay   |
+|---------|---------|
+| 1       | Segera  |
+| 2       | 30 detik|
+| 3       | 5 menit |
+| 4       | 30 menit|
+| 5       | 2 jam   |
+
+Setelah 5 kali gagal, delivery dianggap dead. Manual retry tersedia di dashboard.
+
+Endpoint harus merespons dengan HTTP 2xx dalam 10 detik.

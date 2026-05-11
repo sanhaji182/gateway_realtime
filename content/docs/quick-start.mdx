@@ -1,0 +1,56 @@
+# Quick Start
+
+Panduan ini akan membuat kamu mengirim event pertama dalam < 5 menit.
+
+## 1. Buat App
+
+Login ke dashboard → **Apps** → **New App**.
+Catat `App ID`, `Key`, dan `Secret`.
+
+## 2. Publish event (PHP / CI4)
+
+Install library:
+```bash
+composer require your-org/gateway-php-sdk
+```
+
+Publish event:
+```php
+use Gateway\Client;
+
+$client = new Client(
+    appId: 'app_a1b2c',
+    key:   'pk_live_...',
+    secret:'sk_live_...',
+    host:  'https://gateway.internal'
+);
+
+$client->publish(
+    channel: 'orders.99',
+    event:   'order.paid',
+    data:    ['order_id' => 99, 'amount' => 150000]
+);
+```
+
+## 3. Subscribe di frontend (JavaScript)
+
+```html
+<script src="https://gateway.internal/sdk/gateway.js"></script>
+<script>
+const gw = new GatewayClient({
+  key:  'pk_live_...',
+  host: 'wss://gateway.internal'
+})
+
+const channel = gw.subscribe('orders.99')
+
+channel.on('order.paid', (data) => {
+  console.log('Order paid:', data)
+  showNotification(`Order #${data.order_id} sudah dibayar`)
+})
+</script>
+```
+
+## 4. Verifikasi
+
+Buka dashboard → **Events**. Event `order.paid` harus muncul di tabel.

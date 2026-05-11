@@ -1,0 +1,51 @@
+# Publishing Events
+
+## Via REST API
+
+```bash
+POST /api/v1/events/publish
+Authorization: Bearer sk_live_...
+Content-Type: application/json
+
+{
+  "app_id":  "app_a1b2c",
+  "channel": "orders.99",
+  "event":   "order.paid",
+  "data":    { "order_id": 99, "amount": 150000 }
+}
+```
+
+Response:
+```json
+{ "data": { "ok": true, "event_id": "evt_001", "subscribers": 3 } }
+```
+
+## Via PHP SDK (CI4)
+
+```php
+// Di CI4 Controller atau Service
+$notif = new \Gateway\Client(appId: env('GW_APP_ID'), ...);
+
+// Di OrderController setelah payment confirmed
+$notif->publish('orders.' . $order->id, 'order.paid', [
+    'order_id' => $order->id,
+    'buyer_id' => $order->buyer_id,
+    'amount'   => $order->total,
+]);
+```
+
+## Channel Naming
+
+| Pattern     | Contoh           | Keterangan               |
+|-------------|------------------|--------------------------|
+| `name`      | `users`          | Public channel global    |
+| `name.id`   | `orders.99`      | Channel per entity       |
+| `private-*` | `private-inbox.5`| Perlu auth saat subscribe|
+| `presence-*`| `presence-room.1`| Expose online member list|
+
+## Wildcard Subscribe
+
+```js
+// Subscribe semua event di orders.*
+gw.subscribe('orders.*').on('*', handler)
+```

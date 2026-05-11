@@ -1,0 +1,17 @@
+# Introduction
+
+**Internal Event Gateway** adalah self-hosted realtime event system untuk aplikasi internal.
+Mirip Pusher, tapi berjalan di infrastruktur kamu sendiri.
+
+## Cara kerja
+
+1. Backend kamu (CI4 / Golang / Node.js) publish event via REST API atau PHP SDK.
+2. Gateway meneruskan event ke semua subscriber yang terhubung via WebSocket.
+3. Frontend kamu (browser / mobile) menerima event secara realtime tanpa polling.
+
+## Kapan pakai ini
+
+- Notifikasi order baru ke penjual secara realtime.
+- Update status pesanan tanpa refresh halaman.
+- Indikator "sedang mengetik" pada fitur chat.
+- Broadcast pengumuman dari admin.
