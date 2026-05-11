@@ -1,5 +1,7 @@
 // Package main adalah entrypoint service WebSocket gateway.
 // File ini mengikat konfigurasi, Redis, Hub, HTTP routes, goroutine background, dan graceful shutdown.
+// Extension points (extensions.ExtensionPoints) memungkinkan SaaS Control Plane menginject
+// Authenticator, RateLimiter, dan EventHook tanpa memodifikasi source code core.
 package main
 
 import (
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"go-gateway/config"
+	"go-gateway/extensions"
 	"go-gateway/handler"
 	"go-gateway/hub"
 	redisSub "go-gateway/redis"
@@ -22,80 +25,83 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// ExtensionPoints memungkinkan SaaS Control Plane mengoverride perilaku default.
+// Nil default: no-op auth, no rate limit, no event hooks.
+// Build SaaS binary dengan:
+//   main.Ext = extensions.ExtensionPoints{...}
+// lalu go build -o gateway-cloud .
+var Ext = extensions.ExtensionPoints{
+	Auth:        extensions.NoopAuth{},
+	RateLimiter: extensions.NoopRateLimiter{},
+	EventHook:   extensions.NoopEventHook{},
+}
+
 // main melakukan bootstrap seluruh dependency dan memblokir sampai menerima sinyal shutdown.
 // Goroutine utama memiliki lifecycle aplikasi dan bertanggung jawab menutup HTTP server serta Redis client.
 func main() {
 	cfg := config.Load()
 	level, err := zerolog.ParseLevel(cfg.LogLevel)
 	if err != nil {
-		// Level invalid tidak fatal; fallback info menjaga log production tetap muncul.
 		level = zerolog.InfoLevel
 	}
 	zerolog.SetGlobalLevel(level)
 	logger := log.Output(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 	if cfg.JWTSecret == "" {
-		// JWT secret wajib karena tanpa secret gateway tidak bisa membedakan token sah dan palsu.
 		logger.Error().Msg("JWT_SECRET is required")
 		os.Exit(1)
 	}
 	opt, err := goredis.ParseURL(cfg.RedisURL)
 	if err != nil {
-		// URL Redis invalid adalah kesalahan konfigurasi fatal, jadi service dihentikan sebelum menerima traffic.
 		logger.Error().Err(err).Msg("invalid REDIS_URL")
 		os.Exit(1)
 	}
 	redisClient := goredis.NewClient(opt)
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
-		// Redis awal gagal tidak langsung fatal agar health endpoint tetap bisa memberi status error ke operator.
 		logger.Error().Err(err).Msg("redis ping failed")
 	}
 	h := hub.New(logger)
 	ctx, cancel := context.WithCancel(context.Background())
-	// Goroutine subscriber membaca Redis Pub/Sub dan berhenti saat context dibatalkan pada shutdown.
-	// Goroutine ini memiliki subscription Redis, sedangkan Hub tetap shared dan thread-safe.
 	go (redisSub.Subscriber{Client: redisClient, Hub: h, Log: logger}).Run(ctx)
 	mux := http.NewServeMux()
-	mux.Handle("/ws", handler.WSHandler{Config: cfg, Hub: h, Log: logger})
+	mux.Handle("/ws", handler.WSHandler{
+		Config: cfg, Hub: h, Log: logger,
+		EventHook: Ext.EventHook, RateLimiter: Ext.RateLimiter, Auth: Ext.Auth,
+	})
 	mux.Handle("/health", handler.HealthHandler{Hub: h, Redis: redisClient})
-	mux.Handle("/api/socket/auth", handler.AuthHandler{Config: cfg, Hub: h, Log: logger})
+	mux.Handle("/api/socket/auth", handler.AuthHandler{
+		Config: cfg, Hub: h, Log: logger,
+		EventHook: Ext.EventHook, RateLimiter: Ext.RateLimiter, Auth: Ext.Auth,
+	})
 	mux.HandleFunc("/sdk/gateway.js", sdkHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		// Metrics membaca Hub dengan RLock internal sehingga aman dipanggil bersamaan dengan register/unregister.
 		fmt.Fprintf(w, "gateway_connections %d\n", h.Connections())
 	})
-	server := &http.Server{Addr: ":" + cfg.Port, Handler: corsMiddleware(cfg.AllowedOrigins, mux), ReadHeaderTimeout: 10 * time.Second}
-	// Goroutine HTTP server menerima request sampai Shutdown dipanggil atau ListenAndServe gagal.
-	// Kepemilikan socket listener ada pada http.Server; goroutine utama hanya menunggu sinyal OS.
+	server := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           corsMiddleware(cfg.AllowedOrigins, mux),
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	go func() {
 		logger.Info().Str("addr", server.Addr).Msg("gateway server started")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			// Error selain ErrServerClosed berarti server berhenti tidak terduga dan harus terlihat di log.
 			logger.Error().Err(err).Msg("http server failed")
 		}
 	}()
-	// Buffer 1 mencegah signal.Notify blocking jika sinyal datang sebelum goroutine utama menerima.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-	// Receive ini blocking sampai proses mendapat interrupt atau SIGTERM dari orchestrator/systemd.
 	<-stop
 	logger.Info().Msg("gateway shutting down")
-	// Cancel menghentikan goroutine subscriber Redis secara kooperatif.
 	cancel()
-	// Timeout 5 detik mengikuti requirement cleanup agar shutdown tidak menggantung tanpa batas.
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
-		// Shutdown error dilog karena proses tetap harus lanjut menutup dependency lain.
 		logger.Error().Err(err).Msg("http shutdown failed")
 	}
 	if err := redisClient.Close(); err != nil {
-		// Close Redis error tidak bisa dipulihkan saat shutdown, jadi cukup dicatat.
 		logger.Error().Err(err).Msg("redis close failed")
 	}
 }
 
-// corsMiddleware memasang header CORS global sebelum request masuk ke handler spesifik.
-// OPTIONS dijawab langsung agar preflight tidak memicu validasi WebSocket atau auth.
 func corsMiddleware(allowed []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		setCORSHeaders(w, allowed, r.Header.Get("Origin"))
@@ -106,8 +112,6 @@ func corsMiddleware(allowed []string, next http.Handler) http.Handler {
 	})
 }
 
-// setCORSHeaders memilih Access-Control-Allow-Origin berdasarkan allowlist konfigurasi.
-// Wildcard didukung untuk lokal, tetapi production sebaiknya memakai origin eksplisit.
 func setCORSHeaders(w http.ResponseWriter, allowed []string, origin string) {
 	for _, candidate := range allowed {
 		if candidate == "*" {
@@ -122,8 +126,6 @@ func setCORSHeaders(w http.ResponseWriter, allowed []string, origin string) {
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 }
 
-// sdkHandler menyajikan SDK browser minimal sesuai kontrak GatewayClient.
-// SDK ditanam sebagai string agar gateway tetap single binary tanpa asset pipeline tambahan.
 func sdkHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript")
 	_, _ = w.Write([]byte(strings.TrimSpace(`

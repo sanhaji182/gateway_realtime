@@ -71,3 +71,19 @@ The app uses in-memory demo auth via `lib/auth/session.ts`:
 - **Single server**: Next.js serves both frontend and API routes — no separate backend.
 - **Middleware** (`middleware.ts`): guards `/login` and `/docs` as public; all other routes require a valid `gateway_session` cookie.
 - **WebSocket SDK** (`lib/socket/`): provides channel subscription, presence tracking, event deduplication, and auth signatures. Designed for browser consumption via the `Sdk` class.
+
+## SaaS Extension Points (Open Core Architecture)
+
+This repo is the **open-source core**. The SaaS Control Plane lives in a separate private repo (`gateway_cloud`).
+
+See `SaaS_ARCHITECTURE.md` for the full blueprint.
+
+Key files to know:
+- `backend_go/extensions/extensions.go` — Authenticator, RateLimiter, EventHook interfaces
+- `backend_go/main.go` — exported `var Ext` for SaaS binary to inject implementations
+- `backend_go/handler/ws.go`, `auth.go` — already consume extension interfaces
+
+When building features, keep SaaS extensibility in mind:
+- New lifecycle events? Add to `EventHook` interface.
+- New auth path? Use `Authenticator` with fallback to JWT.
+- Resource limits? Use `RateLimiter`.
