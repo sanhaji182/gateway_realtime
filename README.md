@@ -307,4 +307,4 @@ npm run build         # Production build sukses
 
 ## License
 
-Proprietary — internal use only.
+MIT

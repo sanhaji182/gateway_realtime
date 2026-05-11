@@ -1,20 +1,26 @@
-// Proxy menjaga routing auth untuk dashboard dan route publik.
-// Next.js 16: proxy menggantikan middleware convention.
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 
-const PUBLIC_PATHS = ["/login", "/docs"];
+// Public paths — anyone can access (landing, login, docs)
+const PUBLIC_PATHS = ["/_not-found"];
 
 export function proxy(req: NextRequest) {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
-  const isPublic = PUBLIC_PATHS.some((path) => req.nextUrl.pathname.startsWith(path));
+  const path = req.nextUrl.pathname;
 
-  if (!token && !isPublic) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  // Landing page / is always public
+  if (path === "/" || path === "/login" || path.startsWith("/docs")) {
+    return NextResponse.next();
   }
 
-  if (token && isPublic) {
-    return NextResponse.redirect(new URL("/overview", req.url));
+  // Static assets, API, Next.js internals — pass through
+  if (path.startsWith("/_next") || path.startsWith("/api") || path.startsWith("/favicon")) {
+    return NextResponse.next();
+  }
+
+  // Everything else requires auth
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();

@@ -10,5 +10,5 @@ RUN adduser -D -H gateway
 WORKDIR /app
 COPY --from=builder /app/gateway-server /app/gateway-server
 USER gateway
-EXPOSE 3000
+EXPOSE 4000
 ENTRYPOINT ["/app/gateway-server"]
