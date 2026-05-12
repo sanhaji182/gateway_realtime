@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useConnections } from "@/hooks/useConnections";
 import type { ConnectionItem, ConnectionState } from "@/lib/api";
 
-export default function MarketplacesPage() {
+export default function AppsPage() {
   const [search, setSearch] = useState("");
   const [appId, setAppId] = useState("");
   const [state, setState] = useState<"all" | ConnectionState>("all");
@@ -23,8 +23,8 @@ export default function MarketplacesPage() {
 
   const columns = useMemo<DataTableColumn<ConnectionItem>[]>(() => [
     { accessorKey: "socket_id", header: "Connection ID", meta: { mono: true }, cell: ({ row }) => <span className="text-primary">{row.original.socket_id}</span> },
-    { accessorKey: "app_name", header: "Marketplace" },
-    { accessorKey: "channel_count", header: "Products", cell: ({ row }) => row.original.channel_count },
+    { accessorKey: "app_name", header: "App" },
+    { accessorKey: "channel_count", header: "Channels", cell: ({ row }) => row.original.channel_count },
     { accessorKey: "ip", header: "IP Address", meta: { mono: true } },
     { accessorKey: "connected_at", header: "Connected", cell: ({ row }) => relativeTime(row.original.connected_at) },
     { accessorKey: "last_seen_at", header: "Last Seen", cell: ({ row }) => relativeSeconds(row.original.last_seen_at) },
@@ -35,7 +35,7 @@ export default function MarketplacesPage() {
     <div className="space-y-0">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Marketplaces</h1>
+          <h1 className="page-title">Apps</h1>
           <p className="mt-0.5 text-[12px] text-muted">Active marketplace connections and scraping sessions.</p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded bg-success-subtle px-2 py-0.5 text-[11px] font-medium text-success">
@@ -54,8 +54,8 @@ export default function MarketplacesPage() {
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <KPICard label="Active Sessions" value={(data ?? []).filter((c) => c.state === "live").length} color="success" icon={Globe} />
-        <KPICard label="Marketplaces" value={appOptions.length} color="accent" icon={Store} />
-        <KPICard label="Avg Products" value={data?.length ? Math.round(data.reduce((s, c) => s + c.channel_count, 0) / data.length) : 0} color="primary" icon={ShoppingCart} />
+        <KPICard label="Apps" value={appOptions.length} color="accent" icon={Store} />
+        <KPICard label="Avg Channels" value={data?.length ? Math.round(data.reduce((s, c) => s + c.channel_count, 0) / data.length) : 0} color="primary" icon={ShoppingCart} />
       </div>
 
       <div className="mt-4">

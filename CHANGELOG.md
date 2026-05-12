@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3.1 — 2026-05-12
+
+### Changed
+- **Sidebar labels disesuaikan dengan fungsi sebenarnya**: Products → Apps, Marketplaces → Connections, Intelligence → Events, Price Compare → Webhooks
+- **Overview heading & KPIs**: Marketplace Intelligence → Gateway Dashboard, Tracked Products → Active Connections, Active Scrapers → Events/Minute, Marketplace Health → Service Health
+- **Branding**: Marketlytics → Gateway di sidebar, topbar, dan login page
+- **Column headers**: Connections page (Marketplace → App, Products → Channels), Webhooks page (Product → App, Marketplace → Endpoint)
+- **TypeScript**: zero errors typecheck
+
 ## v0.3.0 — 2026-05-12
 
 ### Added

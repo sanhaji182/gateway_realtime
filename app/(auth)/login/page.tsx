@@ -28,7 +28,7 @@ export default function LoginPage() {
     <div className="flex h-screen items-center justify-center bg-base">
       <div className="w-full max-w-[340px] rounded border bg-surface p-6 shadow-sm">
         <div className="mb-6 text-center">
-          <h1 className="text-[15px] font-semibold text-primary">Marketlytics</h1>
+          <h1 className="text-[15px] font-semibold text-primary">Gateway</h1>
           <p className="mt-1 text-[12px] text-muted">Sign in to your dashboard</p>
         </div>
         <form className="space-y-3" onSubmit={submit}>

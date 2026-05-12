@@ -29,8 +29,8 @@ export default function OverviewPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Marketplace Intelligence</h1>
-          <p className="mt-0.5 text-[12px] text-muted">Monitor pricing, track competitors, and surface product insights across marketplaces.</p>
+          <h1 className="page-title">Gateway Dashboard</h1>
+          <p className="mt-0.5 text-[12px] text-muted">Real-time event metrics, connections, and system health at a glance.</p>
         </div>
         <div className="flex items-center gap-1.5 rounded border bg-surface p-0.5 shadow-sm">
           {ranges.map((r) => (
@@ -56,10 +56,10 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {ovLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) : ovErr ? null : overview ? (
           <>
-            <KPICard label="Tracked Products" value={overview.kpi.active_connections ?? 0} color="primary" subtitle={`${overview.kpi.events_per_minute ?? 0} active marketplaces`} icon={Store} />
+            <KPICard label="Active Connections" value={overview.kpi.active_connections ?? 0} color="primary" subtitle={`${overview.kpi.events_per_minute ?? 0} active channels`} icon={Store} />
             <KPICard label="Price Alerts" value={overview.recent_events?.length ?? 0} color="warning" subtitle={`${overview.recent_failures?.length ?? 0} require attention`} icon={TrendingDown} />
             <KPICard label="Avg Price Change" value={`${((overview.recent_events?.length || 1) % 7 - 3.2).toFixed(1)}%`} color="success" subtitle="vs. last 7 days" icon={TrendingUp} />
-            <KPICard label="Active Scrapers" value={overview.kpi.events_per_minute ?? 0} color="accent" subtitle="Across marketplaces" icon={BarChart3} />
+            <KPICard label="Events/Minute" value={overview.kpi.events_per_minute ?? 0} color="accent" subtitle="Across all channels" icon={BarChart3} />
           </>
         ) : null}
       </div>
@@ -81,7 +81,7 @@ export default function OverviewPage() {
         </section>
 
         <section className="rounded border bg-surface p-4 shadow-sm">
-          <h2 className="section-title mb-3">Marketplace Health</h2>
+          <h2 className="section-title mb-3">Service Health</h2>
           {ovLoading ? <SkeletonChart /> : ovErr ? <InlineError message="Unable to load." /> : overview?.health?.length ? (
             <div className="space-y-1.5">
               {overview.health.map((h) => (
@@ -91,7 +91,7 @@ export default function OverviewPage() {
                 </div>
               ))}
             </div>
-          ) : <EmptyState icon={Store} title="No status" description="Marketplace health checks will appear here." />}
+          ) : <EmptyState icon={Store} title="No status" description="Service health checks will appear here." />}
         </section>
       </div>
 

@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 
 const items: { href: string; icon: LucideIcon; label: string; shortcut?: string }[] = [
   { href: "/overview", icon: BarChart3, label: "Overview", shortcut: "⌘1" },
-  { href: "/apps", icon: Boxes, label: "Products", shortcut: "⌘2" },
-  { href: "/connections", icon: Radio, label: "Marketplaces" },
-  { href: "/events", icon: Zap, label: "Intelligence" },
+  { href: "/apps", icon: Boxes, label: "Apps", shortcut: "⌘2" },
+  { href: "/connections", icon: Radio, label: "Connections" },
+  { href: "/events", icon: Zap, label: "Events" },
   { href: "/orders", icon: Bell, label: "Orders", shortcut: "⌘4" },
-  { href: "/webhooks", icon: ArrowLeftRight, label: "Price Compare" },
+  { href: "/webhooks", icon: ArrowLeftRight, label: "Webhooks" },
   { href: "/playground", icon: Zap, label: "Playground", shortcut: "⌘3" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "⌘," },
 ];
@@ -48,7 +48,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: bo
       )}>
         <div className="flex h-12 items-center gap-2.5 border-b px-4">
           <Search className="h-4 w-4 text-muted" />
-          <span className="text-[13px] font-semibold text-primary">Marketlytics</span>
+          <span className="text-[13px] font-semibold text-primary">Gateway</span>
           <span className="ml-auto rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-muted">BETA</span>
         </div>
         <nav className="flex-1 space-y-0.5 px-3 py-3">

@@ -25,8 +25,8 @@ export default function PriceComparePage() {
 
   const columns = useMemo<DataTableColumn<WebhookLogItem>[]>(() => [
     { accessorKey: "triggered_at", header: "Time", meta: { mono: true }, cell: ({ row }) => formatTime(row.original.triggered_at) },
-    { accessorKey: "app_name", header: "Product" },
-    { accessorKey: "endpoint_url", header: "Marketplace", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.endpoint_url}</span> },
+    { accessorKey: "app_name", header: "App" },
+    { accessorKey: "endpoint_url", header: "Endpoint", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.endpoint_url}</span> },
     { accessorKey: "event", header: "Change", meta: { mono: true } },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge variant={statusV(row.original.status)}>{row.original.status}</StatusBadge> },
     { accessorKey: "latency_ms", header: "Latency", cell: ({ row }) => `${row.original.latency_ms}ms` },
