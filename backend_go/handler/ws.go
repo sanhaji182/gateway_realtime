@@ -4,6 +4,7 @@ package handler
 
 import (
 	"crypto/hmac"
+	"net/http"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -47,7 +48,15 @@ func (h WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "rate limited", http.StatusTooManyRequests)
 		return
 	}
-	claims, err := gwAuth.ValidateToken(r.URL.Query().Get("token"), h.Config.JWTSecret)
+	// Read token from cookie first, fallback to query param (legacy).
+	token := ""
+	if cookie, err := r.Cookie("gateway_session"); err == nil {
+		token = cookie.Value
+	}
+	if token == "" {
+		token = r.URL.Query().Get("token")
+	}
+	claims, err := gwAuth.ValidateToken(token, h.Config.JWTSecret)
 	if err != nil {
 		h.Log.Error().Err(err).Msg("websocket jwt rejected")
 		http.Error(w, "unauthorized", http.StatusUnauthorized)

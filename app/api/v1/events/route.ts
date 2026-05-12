@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyCsrfToken } from "@/lib/csrf";
 import { createEventEnvelope, validateEventEnvelope, validateEventName } from "@/lib/socket/events";
 import { publishToRedis } from "@/lib/socket/redis-publish";
 import { findAppByKey, verifyPublishSignature } from "@/lib/auth/app-credentials";
@@ -50,6 +51,11 @@ export async function POST(request: NextRequest) {
           { error: "Auth required: X-App-Key + X-Signature, or session cookie" },
           { status: 401 }
         );
+      }
+      // CSRF check for cookie-based auth
+      const csrf = request.headers.get("x-csrf-token") || "";
+      if (!verifyCsrfToken(csrf)) {
+        return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
       }
     }
 

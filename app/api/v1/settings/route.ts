@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { settings } from "@/app/api/v1/settings/data";
+import { generateCsrfToken } from "@/lib/csrf";
 
-export async function GET() {
-  return NextResponse.json({ data: settings });
-}
-
-export async function PATCH(request: Request) {
-  const body = await request.json().catch(() => ({}));
-  return NextResponse.json({ data: { ...settings, ...body } });
+export function GET() {
+  return NextResponse.json({
+    csrf_token: generateCsrfToken(),
+    jwt_secret_set: !!process.env.JWT_SECRET,
+    app_secrets_count: (process.env.GATEWAY_APP_SECRETS || "").split(",").filter(Boolean).length,
+  });
 }
