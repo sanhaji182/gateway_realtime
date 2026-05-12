@@ -236,7 +236,102 @@ http_response_code(200);
 echo 'OK';
       `}</CodeBlock>
 
-      <h2 id="next">Next Steps</h2>
+      <h2 id="without-composer">Without Composer / Plain HTTP</h2>
+      <p>You don't need Composer or the SDK at all. Publish events with a simple HTTP POST from any PHP app—even shared hosting.</p>
+
+      <h3>Option A: Manual SDK include</h3>
+      <p>Download <code>sdk/php/src/Client.php</code> and require it directly:</p>
+      <CodeBlock language="php">{`
+<?php
+require_once __DIR__ . '/Client.php';
+
+$client = new \GatewaySDK\Client(
+    appId:  'app_a1b2c',
+    key:    'pk_live_xxx',
+    secret: 'sk_live_xxx',
+    host:   'http://localhost:3000',
+);
+
+$client->publish(
+    channel: 'orders',
+    event:   'order.paid',
+    data:    ['order_id' => 99, 'amount' => 250000],
+);
+      `}</CodeBlock>
+
+      <h3>Option B: Raw cURL / file_get_contents</h3>
+      <p>No dependencies at all — just a plain HTTP POST:</p>
+      <CodeBlock language="php">{`
+<?php
+// === Method 1: file_get_contents (stream context) ===
+$payload = json_encode([
+    'channel' => 'orders',
+    'event'   => 'order.paid',
+    'data'    => ['order_id' => 99, 'amount' => 250000, 'buyer' => 'Budi'],
+]);
+
+$context = stream_context_create([
+    'http' => [
+        'method'  => 'POST',
+        'header'  => "Content-Type: application/json\r\n",
+        'content' => $payload,
+        'timeout' => 5,
+    ],
+]);
+
+$result = file_get_contents('http://localhost:3000/api/v1/events', false, $context);
+echo $result ? "Published\n" : "Failed\n";
+
+// === Method 2: cURL ===
+\$ch = curl_init('http://localhost:3000/api/v1/events');
+curl_setopt_array(\$ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT        => 5,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS     => json_encode([
+        'channel' => 'orders',
+        'event'   => 'order.paid',
+        'data'    => ['order_id' => 99, 'amount' => 250000],
+    ]),
+]);
+\$response = curl_exec(\$ch);
+\$httpCode = curl_getinfo(\$ch, CURLINFO_HTTP_CODE);
+curl_close(\$ch);
+
+if (\$httpCode === 200) {
+    echo "Event published!\n";
+} else {
+    echo "Failed (HTTP \$httpCode): \$response\n";
+}
+      `}</CodeBlock>
+
+      <h3>Option C: Batch publish via raw HTTP</h3>
+      <CodeBlock language="php">{`
+<?php
+$events = [
+    ['channel' => 'orders',   'event' => 'order.paid',    'data' => ['id' => 1, 'amount' => 150000]],
+    ['channel' => 'orders',   'event' => 'order.shipped', 'data' => ['id' => 1]],
+    ['channel' => 'alerts',   'event' => 'alert.created', 'data' => ['msg' => 'Stock low']],
+];
+
+\$ch = curl_init('http://localhost:3000/api/v1/events/batch');
+curl_setopt_array(\$ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS     => json_encode(['batch' => $events]),
+]);
+
+\$resp = curl_exec(\$ch);
+curl_close(\$ch);
+print_r(json_decode(\$resp, true));
+// Output: { "published": 3, "failed": 0, "results": [...] }
+      `}</CodeBlock>
+
+      <Callout type="info">For production with <code>X-App-Key</code> + <code>X-Signature</code> auth, add the headers to the cURL/stream context options. See <a href="/docs/authentication">Authentication</a>.</Callout>
+
+<h2 id="next">Next Steps</h2>
       <ul>
         <li>Read the <a href="/docs/javascript-sdk">JavaScript SDK docs</a> to subscribe to events in the browser.</li>
         <li>See the <a href="/docs/publishing-events">Publishing Events</a> reference for Redis pub/sub and REST API options.</li>
@@ -393,7 +488,102 @@ await fetch('/api/v1/events', {
       `}</CodeBlock>
       <p>For production, publish from your backend — never expose secrets in the browser.</p>
 
-      <h2 id="next">Next Steps</h2>
+      <h2 id="without-composer">Without Composer / Plain HTTP</h2>
+      <p>You don't need Composer or the SDK at all. Publish events with a simple HTTP POST from any PHP app—even shared hosting.</p>
+
+      <h3>Option A: Manual SDK include</h3>
+      <p>Download <code>sdk/php/src/Client.php</code> and require it directly:</p>
+      <CodeBlock language="php">{`
+<?php
+require_once __DIR__ . '/Client.php';
+
+$client = new \GatewaySDK\Client(
+    appId:  'app_a1b2c',
+    key:    'pk_live_xxx',
+    secret: 'sk_live_xxx',
+    host:   'http://localhost:3000',
+);
+
+$client->publish(
+    channel: 'orders',
+    event:   'order.paid',
+    data:    ['order_id' => 99, 'amount' => 250000],
+);
+      `}</CodeBlock>
+
+      <h3>Option B: Raw cURL / file_get_contents</h3>
+      <p>No dependencies at all — just a plain HTTP POST:</p>
+      <CodeBlock language="php">{`
+<?php
+// === Method 1: file_get_contents (stream context) ===
+$payload = json_encode([
+    'channel' => 'orders',
+    'event'   => 'order.paid',
+    'data'    => ['order_id' => 99, 'amount' => 250000, 'buyer' => 'Budi'],
+]);
+
+$context = stream_context_create([
+    'http' => [
+        'method'  => 'POST',
+        'header'  => "Content-Type: application/json\r\n",
+        'content' => $payload,
+        'timeout' => 5,
+    ],
+]);
+
+$result = file_get_contents('http://localhost:3000/api/v1/events', false, $context);
+echo $result ? "Published\n" : "Failed\n";
+
+// === Method 2: cURL ===
+\$ch = curl_init('http://localhost:3000/api/v1/events');
+curl_setopt_array(\$ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_TIMEOUT        => 5,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS     => json_encode([
+        'channel' => 'orders',
+        'event'   => 'order.paid',
+        'data'    => ['order_id' => 99, 'amount' => 250000],
+    ]),
+]);
+\$response = curl_exec(\$ch);
+\$httpCode = curl_getinfo(\$ch, CURLINFO_HTTP_CODE);
+curl_close(\$ch);
+
+if (\$httpCode === 200) {
+    echo "Event published!\n";
+} else {
+    echo "Failed (HTTP \$httpCode): \$response\n";
+}
+      `}</CodeBlock>
+
+      <h3>Option C: Batch publish via raw HTTP</h3>
+      <CodeBlock language="php">{`
+<?php
+$events = [
+    ['channel' => 'orders',   'event' => 'order.paid',    'data' => ['id' => 1, 'amount' => 150000]],
+    ['channel' => 'orders',   'event' => 'order.shipped', 'data' => ['id' => 1]],
+    ['channel' => 'alerts',   'event' => 'alert.created', 'data' => ['msg' => 'Stock low']],
+];
+
+\$ch = curl_init('http://localhost:3000/api/v1/events/batch');
+curl_setopt_array(\$ch, [
+    CURLOPT_POST           => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+    CURLOPT_POSTFIELDS     => json_encode(['batch' => $events]),
+]);
+
+\$resp = curl_exec(\$ch);
+curl_close(\$ch);
+print_r(json_decode(\$resp, true));
+// Output: { "published": 3, "failed": 0, "results": [...] }
+      `}</CodeBlock>
+
+      <Callout type="info">For production with <code>X-App-Key</code> + <code>X-Signature</code> auth, add the headers to the cURL/stream context options. See <a href="/docs/authentication">Authentication</a>.</Callout>
+
+<h2 id="next">Next Steps</h2>
       <ul>
         <li>Read the full <a href="/docs/javascript-sdk">JavaScript SDK reference</a> for all methods and types.</li>
         <li>Check <a href="/docs/presence">Presence Channels</a> for real-time user tracking.</li>
