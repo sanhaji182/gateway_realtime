@@ -16,7 +16,7 @@ import { SkeletonCard, SkeletonChart, SkeletonRow } from "@/components/ui/Skelet
 import { toast } from "@/components/ui/Toast";
 import { gatewayApi, type AppDetail, type AppStats, type EventItem, type TrafficPoint } from "@/lib/api";
 
-export default function ProductDetailPage() {
+export default function AppDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
   const [disableOpen, setDisableOpen] = useState(false);
@@ -27,13 +27,13 @@ export default function ProductDetailPage() {
   if (isLoading) return <div className="space-y-4">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>;
   if (error || !app) return <div className="rounded border border-error bg-error-subtle px-4 py-3 text-[13px] text-error">Unable to load product.</div>;
 
-  const marketplaces = ["Shopee", "Tokopedia", "Lazada", "Bukalapak", "Blibli"];
+  const environments = ["Production", "Staging", "Development", "Testing"];
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <Link href="/apps" className="text-[12px] text-muted hover:text-secondary">&larr; Products</Link>
+          <Link href="/apps" className="text-[12px] text-muted hover:text-secondary">&larr; Apps</Link>
           <div className="mt-1 flex items-center gap-2">
             <h1 className="page-title">{app.name}</h1>
             <StatusBadge variant={app.status === "active" ? "success" : "neutral"}>{app.status === "active" ? "Tracking" : "Paused"}</StatusBadge>
@@ -48,8 +48,8 @@ export default function ProductDetailPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MiniKpi label="Current Price" value="Rp 12.499.000" color="primary" />
-        <MiniKpi label="Lowest Price" value="Rp 11.899.000" color="success" subtitle="Tokopedia" />
-        <MiniKpi label="Highest Price" value="Rp 13.299.000" color="error" subtitle="Blibli" />
+        <MiniKpi label="Event Rate" value="1.2k/min" color="success" subtitle="Staging" />
+        <MiniKpi label="Highest Price" value="Rp 13.299.000" color="error" subtitle="Sandbox" />
         <MiniKpi label="Price Change" value="+2.1%" color="warning" subtitle="vs last week" />
       </div>
 
@@ -72,7 +72,7 @@ export default function ProductDetailPage() {
         <section className="rounded border bg-surface p-4 shadow-sm">
           <h2 className="section-title mb-3">Price Comparison</h2>
           <div className="space-y-1.5">
-            {marketplaces.map((mp, i) => (
+            {environments.map((mp, i) => (
               <div key={mp} className="flex items-center justify-between gap-2 rounded bg-subtle px-3 py-2">
                 <div className="flex items-center gap-2">
                   <Store className="h-3.5 w-3.5 text-muted" />

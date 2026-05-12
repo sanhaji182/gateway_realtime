@@ -9,10 +9,10 @@ import { cn } from "@/lib/utils";
 const titles: Record<string, string> = {
   "/": "Overview",
   "/overview": "Overview",
-  "/apps": "Products",
-  "/connections": "Marketplaces",
-  "/events": "Intelligence",
-  "/webhooks": "Price Compare",
+  "/apps": "Apps",
+  "/connections": "Connections",
+  "/events": "Events",
+  "/webhooks": "Webhooks",
   "/settings": "Settings",
 };
 

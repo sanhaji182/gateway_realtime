@@ -12,7 +12,7 @@ import { SkeletonCard, SkeletonRow } from "@/components/ui/Skeleton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { gatewayApi, type WebhookLogItem, type WebhookLogStatus } from "@/lib/api";
 
-export default function PriceComparePage() {
+export default function WebhooksPage() {
   const [search, setSearch] = useState("");
   const [appId, setAppId] = useState("");
   const [status, setStatus] = useState<"all" | WebhookLogStatus>("all");
@@ -36,7 +36,7 @@ export default function PriceComparePage() {
   return (
     <div className="space-y-0">
       <div>
-        <h1 className="page-title">Price Compare</h1>
+        <h1 className="page-title">Webhooks</h1>
         <p className="mt-0.5 text-[12px] text-muted">Track price changes across marketplaces and monitor comparison accuracy.</p>
       </div>
 

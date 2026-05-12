@@ -10,7 +10,6 @@ const items: { href: string; icon: LucideIcon; label: string; shortcut?: string 
   { href: "/apps", icon: Boxes, label: "Apps", shortcut: "⌘2" },
   { href: "/connections", icon: Radio, label: "Connections" },
   { href: "/events", icon: Zap, label: "Events" },
-  { href: "/orders", icon: Bell, label: "Orders", shortcut: "⌘4" },
   { href: "/webhooks", icon: ArrowLeftRight, label: "Webhooks" },
   { href: "/playground", icon: Zap, label: "Playground", shortcut: "⌘3" },
   { href: "/settings", icon: Settings, label: "Settings", shortcut: "⌘," },

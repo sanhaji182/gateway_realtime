@@ -6,28 +6,28 @@ export const connections: ConnectionDetail[] = [
   {
     socket_id: "ws_a1b2c3d4e5",
     app_id: "app_a1b2c",
-    app_name: "marketplace",
+    app_name: "web-app",
     user_id: "u-881",
     ip: "10.0.1.4",
-    channels: ["orders.99", "chat.55"],
+    channels: ["events.1", "notifications.1"],
     channel_count: 2,
     connected_at: new Date(now - 18 * 60 * 1000).toISOString(),
     last_seen_at: new Date(now - 2 * 1000).toISOString(),
     state: "live",
     user_agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
     subscribed_channels: [
-      { name: "orders.99", joined_at: new Date(now - 17 * 60 * 1000).toISOString() },
-      { name: "chat.55", joined_at: new Date(now - 12 * 60 * 1000).toISOString() }
+      { name: "events.1", joined_at: new Date(now - 17 * 60 * 1000).toISOString() },
+      { name: "notifications.1", joined_at: new Date(now - 12 * 60 * 1000).toISOString() }
     ],
     recent_events: [
-      { ts: new Date(now - 20 * 1000).toISOString(), event: "order.paid", channel: "orders.99" },
-      { ts: new Date(now - 72 * 1000).toISOString(), event: "message.sent", channel: "chat.55" }
+      { ts: new Date(now - 20 * 1000).toISOString(), event: "event.triggered", channel: "events.1" },
+      { ts: new Date(now - 72 * 1000).toISOString(), event: "notification.sent", channel: "notifications.1" }
     ]
   },
   {
     socket_id: "ws_f6g7h8i9j0",
     app_id: "app_ops",
-    app_name: "ops",
+    app_name: "backend",
     user_id: "u-104",
     ip: "10.0.2.18",
     channels: ["alerts"],
@@ -42,16 +42,16 @@ export const connections: ConnectionDetail[] = [
   {
     socket_id: "ws_k1l2m3n4o5",
     app_id: "app_a1b2c",
-    app_name: "marketplace",
+    app_name: "web-app",
     user_id: "",
     ip: "2001:db8::4",
-    channels: ["presence.market"],
+    channels: ["presence.lobby"],
     channel_count: 1,
     connected_at: new Date(now - 90 * 1000).toISOString(),
     last_seen_at: new Date(now - 1 * 1000).toISOString(),
     state: "live",
     user_agent: "Gateway JS Client/1.0",
-    subscribed_channels: [{ name: "presence.market", joined_at: new Date(now - 80 * 1000).toISOString() }],
+    subscribed_channels: [{ name: "presence.lobby", joined_at: new Date(now - 80 * 1000).toISOString() }],
     recent_events: []
   }
 ];

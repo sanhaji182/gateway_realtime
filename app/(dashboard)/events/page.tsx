@@ -14,7 +14,7 @@ import { toast } from "@/components/ui/Toast";
 import { useDrawer } from "@/context/DrawerContext";
 import { gatewayApi, type EventDetail, type EventItem, type EventStatus } from "@/lib/api";
 
-export default function IntelligencePage() {
+export default function EventsPage() {
   const [search, setSearch] = useState("");
   const [appId, setAppId] = useState("");
   const [channel, setChannel] = useState("");
@@ -41,7 +41,7 @@ export default function IntelligencePage() {
     <div className="space-y-0">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Product Intelligence</h1>
+          <h1 className="page-title">Events</h1>
           <p className="mt-0.5 text-[12px] text-muted">Raw data from marketplace scrapes, price changes, and product updates.</p>
         </div>
         <Button variant="secondary" size="sm" className="gap-1.5">

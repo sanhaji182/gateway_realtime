@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useConnections } from "@/hooks/useConnections";
 import type { ConnectionItem, ConnectionState } from "@/lib/api";
 
-export default function AppsPage() {
+export default function ConnectionsPage() {
   const [search, setSearch] = useState("");
   const [appId, setAppId] = useState("");
   const [state, setState] = useState<"all" | ConnectionState>("all");

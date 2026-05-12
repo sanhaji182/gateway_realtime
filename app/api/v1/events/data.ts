@@ -1,12 +1,12 @@
 import type { EventDetail, EventItem, EventStatus, TimeRange } from "@/lib/api";
 
 const apps = [
-  { id: "app_a1b2c", name: "marketplace" },
-  { id: "app_ops", name: "ops" },
-  { id: "app_chat", name: "chat" }
+  { id: "app_a1b2c", name: "web-app" },
+  { id: "app_ops", name: "backend" },
+  { id: "app_chat", name: "mobile-app" }
 ];
-const channels = ["orders.99", "chat.55", "alerts", "presence.market", "orders.42"];
-const eventNames = ["order.paid", "message.sent", "alert.created", "member.joined", "order.updated"];
+const channels = ["events.1", "notifications.1", "alerts", "presence.market", "orders.42"];
+const eventNames = ["event.triggered", "notification.sent", "alert.created", "member.joined", "order.updated"];
 
 export const eventDetails: EventDetail[] = Array.from({ length: 86 }).map((_, index) => {
   const app = apps[index % apps.length];

@@ -19,7 +19,7 @@ import { gatewayApi, type AppListItem, type AppStatus } from "@/lib/api";
 
 const perPage = 20;
 
-export default function ProductsPage() {
+export default function AppsPage() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | AppStatus>("all");
@@ -44,8 +44,8 @@ export default function ProductsPage() {
     <div className="space-y-0">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="page-title">Products</h1>
-          <p className="mt-0.5 text-[12px] text-muted">Track products across marketplaces and monitor price changes.</p>
+          <h1 className="page-title">Apps</h1>
+          <p className="mt-0.5 text-[12px] text-muted">Manage apps, API keys, and webhook endpoints.</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" className="gap-1.5">
@@ -84,7 +84,7 @@ export default function ProductsPage() {
 
 function NewProductModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated: () => void }) {
   const [name, setName] = useState("");
-  const [marketplace, setMarketplace] = useState("shopee");
+  const [environment, setEnvironment] = useState("production");
   const [productUrl, setProductUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -94,7 +94,7 @@ function NewProductModal({ open, onOpenChange, onCreated }: { open: boolean; onO
     if (!name.trim()) { setError("Product name is required."); return; }
     setIsLoading(true);
     try {
-      await gatewayApi.apps.create({ name, environment: marketplace } as any);
+      await gatewayApi.apps.create({ name, environment } as any);
       toast.success("Product added");
       onCreated();
     } catch { setError("Failed to add product. Try again."); }
@@ -113,12 +113,12 @@ function NewProductModal({ open, onOpenChange, onCreated }: { open: boolean; onO
           <form className="mt-4 space-y-3" onSubmit={submit}>
             <Input name="name" label="Product Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. iPhone 15 Pro Max" required />
             <label className="block space-y-1.5">
-              <span className="text-[12px] font-medium text-secondary">Marketplace</span>
-              <select value={marketplace} onChange={(e) => setMarketplace(e.target.value)} className="h-8 w-full rounded border bg-surface px-2.5 text-[13px] text-primary focus:border-accent focus:outline-none">
-                <option value="shopee">Shopee</option>
-                <option value="tokopedia">Tokopedia</option>
-                <option value="lazada">Lazada</option>
-                <option value="bukalapak">Bukalapak</option>
+              <span className="text-[12px] font-medium text-secondary">Environment</span>
+              <select value={environment} onChange={(e) => setEnvironment(e.target.value)} className="h-8 w-full rounded border bg-surface px-2.5 text-[13px] text-primary focus:border-accent focus:outline-none">
+                <option value="production">Production</option>
+                <option value="staging">Staging</option>
+                <option value="development">Development</option>
+                <option value="testing">Testing</option>
                 <option value="blibli">Blibli</option>
               </select>
             </label>
