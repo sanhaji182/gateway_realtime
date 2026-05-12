@@ -1,6 +1,38 @@
 import Link from "next/link";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { DocsPage } from "@/lib/docs/nav";
 
 export function PrevNextNav({ prev, next }: { prev: DocsPage | null; next: DocsPage | null }) {
-  return <nav className="mt-12 grid grid-cols-1 gap-3 border-t pt-6 sm:grid-cols-2">{prev ? <Link href={`/docs/${prev.slug}`} className="rounded-md border bg-surface2 p-3 text-sm hover:bg-surface3"><div className="text-muted">Previous</div><div className="mt-1 text-primary">{prev.title}</div></Link> : <span />}{next ? <Link href={`/docs/${next.slug}`} className="rounded-md border bg-surface2 p-3 text-right text-sm hover:bg-surface3"><div className="text-muted">Next</div><div className="mt-1 text-primary">{next.title}</div></Link> : null}</nav>;
+  if (!prev && !next) return null;
+  
+  return (
+    <nav className="mt-12 pt-8 border-t border-border/20 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {prev ? (
+        <Link
+          href={`/docs/${prev.slug}`}
+          className="group rounded-xl border border-border/30 bg-surface p-4 transition-all duration-200 hover:border-accent/20 hover:shadow-sm hover:bg-accent/3"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted group-hover:text-accent transition-colors">
+            <ArrowLeft className="h-3 w-3" /> Previous
+          </div>
+          <div className="mt-1.5 text-[14px] font-medium text-secondary group-hover:text-primary transition-colors">
+            {prev.title}
+          </div>
+        </Link>
+      ) : <span />}
+      {next ? (
+        <Link
+          href={`/docs/${next.slug}`}
+          className="group rounded-xl border border-border/30 bg-surface p-4 text-right transition-all duration-200 hover:border-accent/20 hover:shadow-sm hover:bg-accent/3"
+        >
+          <div className="flex items-center justify-end gap-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted group-hover:text-accent transition-colors">
+            Next <ArrowRight className="h-3 w-3" />
+          </div>
+          <div className="mt-1.5 text-[14px] font-medium text-secondary group-hover:text-primary transition-colors">
+            {next.title}
+          </div>
+        </Link>
+      ) : null}
+    </nav>
+  );
 }

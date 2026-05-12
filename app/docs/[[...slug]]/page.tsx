@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Home, ChevronRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
@@ -15,18 +16,35 @@ export default async function DocsPage({ params }: { params: Promise<{ slug?: st
   const { prev, next } = getPrevNext(normalizedSlug);
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <div className="min-h-screen bg-base">
       <DocsSidebar />
-      <div className="lg:pl-[260px]">
-        <div className="mx-auto flex max-w-[1200px] gap-8 px-4 py-8 sm:px-8">
-          <main className="mx-auto min-w-0 max-w-[720px] flex-1">
-            <div className="mb-6 text-sm text-muted"><Link href="/docs" className="hover:text-primary">Docs</Link><span className="mx-2">/</span><span>{page.title}</span></div>
-            <article className="docs-content rounded-md border bg-surface1 p-6 sm:p-8">
-              <h1>{page.title}</h1>
-              {content.render()}
+      <div className="lg:pl-[272px]">
+        <div className="mx-auto flex max-w-[1240px] gap-8 px-5 py-8 sm:px-8 lg:px-10">
+          <main className="flex-1 min-w-0 max-w-[760px] mx-auto">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 mb-8 text-[12px] text-muted">
+              <Link href="/" className="flex items-center gap-1 hover:text-secondary transition-colors">
+                <Home className="h-3 w-3" /> Dashboard
+              </Link>
+              <ChevronRight className="h-3 w-3" />
+              <Link href="/docs" className="hover:text-secondary transition-colors">Docs</Link>
+              <ChevronRight className="h-3 w-3" />
+              <span className="text-primary font-medium">{page.title}</span>
+            </div>
+
+            {/* Content card */}
+            <article className="rounded-xl border border-border/30 bg-surface p-8 shadow-xs">
+              <h1 className="text-[28px] font-bold tracking-[-0.03em] text-primary mb-8 pb-6 border-b border-border/20">
+                {page.title}
+              </h1>
+              <div className="prose-custom">
+                {content.render()}
+              </div>
               <PrevNextNav prev={prev} next={next} />
             </article>
           </main>
+
+          {/* Right Table of Contents */}
           <TableOfContents items={content.toc} />
         </div>
       </div>
