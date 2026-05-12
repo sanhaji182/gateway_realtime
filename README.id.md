@@ -1,26 +1,26 @@
 # 🚀 Gateway Realtime
 
+> 🇬🇧 [English](./README.md)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![Tests](https://img.shields.io/badge/tests-28%2F28-brightgreen)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)]()
 [![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8)]()
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)]()
 
-> 🇮🇩 [Bahasa Indonesia](./README.id.md)
-
 # Gateway Realtime
 
-Self-hosted realtime event system for internal apps — like Pusher, but running on your own infrastructure. Next.js 16 Dashboard + Go WebSocket Backend + Redis pub/sub.
+Self-hosted realtime event system untuk aplikasi internal — mirip Pusher, tapi berjalan di infrastruktur kamu sendiri. Dashboard Next.js 16 + Backend WebSocket Go + Redis pub/sub.
 
-> **🤖 AI-Assisted Development** — This project was built with AI code generation as a productivity tool, guided and reviewed by a human developer. Every line of code has been verified and tested before reaching production.
 
-## Architecture
+> **🤖 Dibangun dengan AI** — Project ini dikembangkan dengan bantuan AI code generation sebagai alat bantu, di bawah arahan dan review developer manusia. Setiap baris kode telah diperiksa dan diuji sebelum masuk ke production.
+## Arsitektur
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  Frontend (Browser / Mobile)                                │
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────────┐  │
-│  │ Dashboard   │  │ WebSocket SDK│  │ Browser SDK       │  │
+│  │ Dashboard   │  │ WebSocket SDK│  │ SDK Browser       │  │
 │  │ Next.js 16  │  │ lib/socket   │  │ /sdk/gateway.js   │  │
 │  └──────┬──────┘  └──────┬───────┘  └────────┬──────────┘  │
 │         │                │                    │             │
@@ -45,22 +45,22 @@ Self-hosted realtime event system for internal apps — like Pusher, but running
 │                          │                                  │
 │  ┌───────────────────────▼──────────────────────────────┐   │
 │  │  Backend Service (CI4 / Golang / Node.js)            │   │
-│  │  Publish events via REST API or PHP SDK              │   │
+│  │  Publish event via REST API atau PHP SDK             │   │
 │  └──────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Features
+## Fitur
 
-- **Admin Dashboard** — Overview, Apps, Connections, Events, Webhooks, Settings, Admin Users, Environment
-- **WebSocket Gateway** — Go server with Redis pub/sub, JWT auth, channel management
+- **Dashboard Admin** — Overview, Apps, Connections, Events, Webhooks, Settings, Admin Users, Environment
+- **WebSocket Gateway** — Go server dengan Redis pub/sub, JWT auth, channel management
 - **Channel Types** — Public, Private, Presence, Wildcard
 - **Webhook System** — Delivery log, retry, monitoring
-- **Realtime SDK** — Framework-agnostic TypeScript SDK for the browser
-- **Developer Docs** — Built-in documentation portal at `/docs`
-- **Dark Mode** — Theme toggle with CSS custom properties
+- **Realtime SDK** — Framework-agnostic TypeScript SDK untuk browser
+- **Developer Docs** — Portal dokumentasi built-in di `/docs`
+- **Dark Mode** — Theme toggle dengan CSS custom properties
 
-## Prerequisites
+## Prasyarat
 
 | Dependency | Version | Purpose |
 |---|---|---|
@@ -75,62 +75,80 @@ Self-hosted realtime event system for internal apps — like Pusher, but running
 git clone https://github.com/sanhaji182/gateway_realtime.git
 cd gateway_realtime
 
-# Start all services
-docker compose up -d
+docker compose up
 ```
 
-Dashboard: `http://localhost:3000`  
-WebSocket Gateway: `ws://localhost:4000`  
-Metrics: `http://localhost:4000/metrics`  
-SDK: `http://localhost:4000/sdk/gateway.js`
+Buka http://localhost:3000 → login `admin@gateway.local` / `password`.
 
-### Manual Setup
+---
+
+## Quick Start (Development)
+
+### 1. Clone & Install
 
 ```bash
-# Terminal 1: Redis
-redis-server
+git clone https://github.com/sanhaji182/gateway_realtime.git
+cd gateway_realtime
 
-# Terminal 2: Go Backend
-cd backend_go
-REDIS_URL=redis://localhost:6379 \
-JWT_SECRET=change-me-in-production-64-chars-min \
-ALLOWED_ORIGINS=http://localhost:3000 \
-go run main.go
-
-# Terminal 3: Frontend
-cd ../
+# Frontend
 npm install
+
+# Backend Go
+cd backend_go
+go mod download
+cd ..
+```
+
+### 2. Jalankan Redis
+
+```bash
+docker run -d --name redis-gateway \
+  -p 6379:6379 \
+  --restart unless-stopped \
+  redis:7-alpine redis-server --appendonly yes
+```
+
+### 3. Jalankan Backend Go
+
+```bash
+cd backend_go
+
+export PORT=4000
+export REDIS_URL=redis://localhost:6379
+export JWT_SECRET=dev-secret-change-in-production
+export ALLOWED_ORIGINS=http://localhost:3000
+
+go run main.go
+```
+
+### 4. Jalankan Frontend
+
+```bash
+# Kembali ke root project
+cd ..
+
 npm run dev
 ```
 
-## Quick Test — Publish & Subscribe
-
-```bash
-# 1. Subscribe via WebSocket (websocat)
-websocat "ws://localhost:4000/ws?token=YOUR_JWT_TOKEN"
-> {"type":"subscribe","channel":"orders"}
-# → {"type":"system","event":"subscription_succeeded",...}
-
-# 2. Publish via REST API
-curl -X POST http://localhost:3000/api/v1/events \
-  -H "Content-Type: application/json" \
-  -d '{"channel":"orders","event":"order.created","data":{"id":1,"total":250000}}'
-```
+Buka **http://localhost:3000** — Dashboard siap digunakan.
 
 ## Demo Credentials
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@gateway.local | password |
+Auth in-memory via `lib/auth/session.ts`:
+
+| Role   | Email                | Password |
+|--------|----------------------|----------|
+| Admin  | admin@gateway.local  | password |
 | Viewer | viewer@gateway.local | password |
 
-## Routes
+## Route Map
 
-| Path | Access | Description |
+| Route | Type | Description |
 |---|---|---|
 | `/login` | Public | Login page |
-| `/` | Dashboard | Overview with charts |
-| `/apps` | Dashboard | App management & API keys |
+| `/overview` | Dashboard | Traffic overview & KPIs |
+| `/apps` | Dashboard | App management |
+| `/apps/[id]` | Dashboard | App detail |
 | `/connections` | Dashboard | Active WebSocket connections |
 | `/events` | Dashboard | Event log |
 | `/webhooks` | Dashboard | Webhook monitor & retry |
@@ -263,13 +281,13 @@ server {
 
 ## Verification Checklist
 
-Before production, ensure all commands return **zero errors**:
+Sebelum production, pastikan semua command ini **zero errors**:
 
 ```bash
 npm run typecheck     # TypeScript type-check
 npm run lint          # ESLint (0 errors, 0 warnings)
 npm run test:socket   # 28/28 tests pass
-npm run build         # Production build succeeds
+npm run build         # Production build sukses
 ```
 
 ## Tech Stack
@@ -294,7 +312,7 @@ npm run build         # Production build succeeds
 
 ## Author
 
-> **Built by [Sonick Sanhaji](https://www.linkedin.com/in/sansanhaji/)** — Software developer. Architected and reviewed. AI-assisted execution.
+> **Dibangun oleh [Sonick Sanhaji](https://www.linkedin.com/in/sansanhaji/)** — Software developer. Arsitektur dan review oleh manusia. Eksekusi dibantu AI.
 
 ## License
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 // GET /api/socket/token — Generate dev JWT for Go gateway WebSocket handshake
 export async function GET() {
-  const secret = process.env.JWT_SECRET || "playground-dev-secret-change-in-production";
+  const secret = process.env.JWT_SECRET || "change-me-in-production-64-chars-min";
   const encoder = new TextEncoder();
   
   const headerB64 = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }))
