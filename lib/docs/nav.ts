@@ -3,6 +3,13 @@ export type DocsSection = { title: string; pages: DocsPage[] };
 
 export const docsNav: DocsSection[] = [
   {
+    title: "Tutorials",
+    pages: [
+      { title: "PHP Integration Guide", slug: "tutorial-php" },
+      { title: "JavaScript Integration Guide", slug: "tutorial-js" },
+    ],
+  },
+  {
     title: "Getting Started",
     pages: [
       { title: "Introduction", slug: "introduction" },

@@ -9,6 +9,399 @@ type DocsContent = {
 };
 
 export const docsContent: Record<string, DocsContent> = {
+  "tutorial-php": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "install", title: "Installation" },
+      { id: "laravel", title: "Laravel Integration" },
+      { id: "codeigniter", title: "CodeIgniter 4 Integration" },
+      { id: "native", title: "Plain PHP Integration" },
+      { id: "broadcast", title: "Broadcasting Events" },
+      { id: "batch", title: "Batch Publishing" },
+      { id: "webhooks", title: "Receiving Webhooks" },
+      { id: "next", title: "Next Steps" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>This guide walks you through integrating Gateway Realtime into a PHP application — whether you use Laravel, CodeIgniter 4, or plain PHP. By the end, your backend will be publishing realtime events to your frontend.</p>
+      <Callout type="info">Prerequisites: Gateway Realtime running (dashboard at <code>:3000</code>, WebSocket at <code>:4000</code>). See <a href="/docs/installation">Installation</a> first.</Callout>
+
+      <h2 id="install">Installation</h2>
+      <CodeBlock language="bash">{`
+cd your-php-project
+composer require gateway/sdk-php
+      `}</CodeBlock>
+      <p>The SDK is a single PHP class — no framework required. Works with PHP 8.0+.</p>
+
+      <h2 id="laravel">Laravel Integration</h2>
+      <h3>Step 1: Add config</h3>
+      <CodeBlock language="php" filename="config/gateway.php">{`
+return [
+    'app_id'  => env('GATEWAY_APP_ID', ''),
+    'key'     => env('GATEWAY_KEY', ''),
+    'secret'  => env('GATEWAY_SECRET', ''),
+    'host'    => env('GATEWAY_HOST', 'http://localhost:3000'),
+];
+      `}</CodeBlock>
+
+      <h3>Step 2: Add to .env</h3>
+      <CodeBlock language="bash" filename=".env">{`
+GATEWAY_APP_ID=app_a1b2c
+GATEWAY_KEY=pk_live_a1b2c3
+GATEWAY_SECRET=sk_live_xyz...
+GATEWAY_HOST=http://localhost:3000
+      `}</CodeBlock>
+
+      <h3>Step 3: Create a Service Provider</h3>
+      <CodeBlock language="php" filename="app/Providers/GatewayServiceProvider.php">{`
+namespace App\\Providers;
+
+use GatewaySDK\\Client;
+use Illuminate\\Support\\ServiceProvider;
+
+class GatewayServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        $this->app->singleton(Client::class, function () {
+            return new Client(
+                appId:  config('gateway.app_id'),
+                key:     config('gateway.key'),
+                secret:  config('gateway.secret'),
+                host:    config('gateway.host'),
+            );
+        });
+    }
+}
+      `}</CodeBlock>
+
+      <h3>Step 4: Publish from anywhere</h3>
+      <CodeBlock language="php" filename="app/Http/Controllers/OrderController.php">{`
+use GatewaySDK\\Client;
+
+class OrderController extends Controller
+{
+    public function store(Request $request, Client $gateway): JsonResponse
+    {
+        $order = Order::create($request->validated());
+
+        // Publish realtime event
+        $gateway->publish(
+            channel: 'orders.' . $order->user_id,
+            event:   'order.created',
+            data:    $order->toArray(),
+        );
+
+        return response()->json($order, 201);
+    }
+}
+      `}</CodeBlock>
+
+      <h2 id="codeigniter">CodeIgniter 4 Integration</h2>
+
+      <h3>Step 1: Create a helper or service</h3>
+      <CodeBlock language="php" filename="app/Services/GatewayService.php">{`
+namespace App\\Services;
+
+use GatewaySDK\\Client;
+
+class GatewayService
+{
+    private Client $client;
+
+    public function __construct()
+    {
+        $this->client = new Client(
+            appId:  env('GATEWAY_APP_ID'),
+            key:     env('GATEWAY_KEY'),
+            secret:  env('GATEWAY_SECRET'),
+            host:    env('GATEWAY_HOST'),
+        );
+    }
+
+    public function publish(string $channel, string $event, array $data): void
+    {
+        $this->client->publish($channel, $event, $data);
+    }
+
+    public function getClient(): Client
+    {
+        return $this->client;
+    }
+}
+      `}</CodeBlock>
+
+      <h3>Step 2: Use it in a controller</h3>
+      <CodeBlock language="php" filename="app/Controllers/Order.php">{`
+namespace App\\Controllers;
+
+use App\\Services\\GatewayService;
+
+class Order extends BaseController
+{
+    public function create()
+    {
+        $model = new \\App\\Models\\OrderModel();
+        $id = $model->insert($this->request->getPost());
+
+        $gw = new GatewayService();
+        $gw->publish(
+            channel: 'orders',
+            event:   'order.created',
+            data:    ['order_id' => $id, 'total' => $this->request->getPost('total')],
+        );
+
+        return $this->response->setJSON(['id' => $id]);
+    }
+}
+      `}</CodeBlock>
+
+      <h2 id="native">Plain PHP Integration</h2>
+      <CodeBlock language="php" filename="publish.php">{`
+<?php
+require_once __DIR__ . '/vendor/autoload.php';
+
+use GatewaySDK\\Client;
+
+$client = new Client(
+    appId:  getenv('GATEWAY_APP_ID'),
+    key:     getenv('GATEWAY_KEY'),
+    secret:  getenv('GATEWAY_SECRET'),
+    host:    getenv('GATEWAY_HOST') ?: 'http://localhost:3000',
+);
+
+// Called after an order is paid
+$orderId = 99;
+$amount  = 250000;
+
+$client->publish(
+    channel: 'orders',
+    event:   'order.paid',
+    data:    [
+        'order_id' => $orderId,
+        'amount'   => $amount,
+        'currency' => 'IDR',
+        'buyer'    => 'Budi',
+    ],
+);
+
+echo "Event published for order #{$orderId}\\n";
+      `}</CodeBlock>
+
+      <h2 id="broadcast">Broadcasting Events from Your App</h2>
+      <p>The full API reference for the PHP SDK client:</p>
+      <table>
+        <thead><tr><th>Method</th><th>Parameters</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td><code>publish()</code></td><td><code>channel, event, data</code></td><td>Publish a single event.</td></tr>
+          <tr><td><code>publishBatch()</code></td><td><code>array of events</code></td><td>Publish up to 100 events in one request.</td></tr>
+        </tbody>
+      </table>
+
+      <h2 id="batch">Batch Publishing</h2>
+      <p>For high-throughput backends, batch publishing reduces HTTP overhead:</p>
+      <CodeBlock language="php">{`
+$client->publishBatch([
+    ['channel' => 'orders.1', 'event' => 'order.paid',    'data' => ['id' => 1, 'amount' => 150000]],
+    ['channel' => 'orders.1', 'event' => 'order.shipped', 'data' => ['id' => 1]],
+    ['channel' => 'alerts',   'event' => 'alert.created', 'data' => ['msg' => 'CPU > 90%']],
+]);
+      `}</CodeBlock>
+
+      <h2 id="webhooks">Receiving Webhooks in PHP</h2>
+      <p>If you configured a webhook endpoint, your PHP app needs to verify the signature and process the payload:</p>
+      <CodeBlock language="php" filename="webhook.php">{`
+<?php
+$payload   = file_get_contents('php://input');
+$signature = $_SERVER['HTTP_X_GATEWAY_SIGNATURE'] ?? '';
+$secret    = getenv('GATEWAY_WEBHOOK_SECRET');
+
+// Verify HMAC signature
+$expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+if (!hash_equals($expected, $signature)) {
+    http_response_code(401);
+    exit('Invalid signature');
+}
+
+$event = json_decode($payload, true);
+
+// Process the event
+match ($event['event']) {
+    'order.paid'    => handleOrderPaid($event['data']),
+    'alert.created' => handleAlert($event['data']),
+    default         => logEvent($event),
+};
+
+http_response_code(200);
+echo 'OK';
+      `}</CodeBlock>
+
+      <h2 id="next">Next Steps</h2>
+      <ul>
+        <li>Read the <a href="/docs/javascript-sdk">JavaScript SDK docs</a> to subscribe to events in the browser.</li>
+        <li>See the <a href="/docs/publishing-events">Publishing Events</a> reference for Redis pub/sub and REST API options.</li>
+        <li>Check the <a href="/docs/webhooks">Webhooks</a> guide for retry policies and monitoring.</li>
+      </ul>
+    </>),
+  },
+  "tutorial-js": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "vanilla", title: "Vanilla HTML/JS" },
+      { id: "react", title: "React / Next.js" },
+      { id: "token", title: "Getting a JWT Token" },
+      { id: "subscribe", title: "Subscribing to Events" },
+      { id: "publish", title: "Publishing from Browser" },
+      { id: "next", title: "Next Steps" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>This guide shows how to add realtime features to any JavaScript frontend — vanilla HTML, React, or Next.js. You'll connect to Gateway, subscribe to channels, and handle incoming events in under 5 minutes.</p>
+
+      <h2 id="vanilla">Vanilla HTML / JavaScript</h2>
+      <p>Simplest approach — one script tag, no bundler needed:</p>
+      <CodeBlock language="html">{`
+<!DOCTYPE html>
+<html>
+<head><title>Realtime Dashboard</title></head>
+<body>
+  <h1>Orders</h1>
+  <ul id="order-list"></ul>
+
+  <script src="http://localhost:4000/sdk/gateway.js"></script>
+  <script>
+    (async () => {
+      // 1. Get JWT token from your auth endpoint
+      const res = await fetch('/api/socket/token')
+      const { token } = await res.json()
+
+      // 2. Connect
+      const gw = new GatewayClient({ host: 'http://localhost:4000' })
+
+      gw.on('connected', () => {
+        // 3. Subscribe
+        const orders = gw.subscribe('orders')
+        orders.on('order.created', (data) => {
+          const li = document.createElement('li')
+          li.textContent = \`Order #\${data.order_id}: Rp \${data.amount}\`
+          document.getElementById('order-list').appendChild(li)
+        })
+      })
+
+      gw.connect(token)
+    })()
+  </script>
+</body>
+</html>
+      `}</CodeBlock>
+
+      <h2 id="react">React / Next.js Integration</h2>
+      <p>Use the TypeScript SDK from <code>lib/socket/</code> for full type safety:</p>
+      <CodeBlock language="tsx">{`
+// hooks/useRealtime.ts
+import { Sdk } from "@/lib/socket";
+import { useEffect, useRef, useState } from "react";
+
+export function useRealtimeOrder(channel: string) {
+  const [orders, setOrders] = useState<any[]>([]);
+  const sdkRef = useRef<Sdk | null>(null);
+
+  useEffect(() => {
+    const sdk = new Sdk({ host: "http://localhost:4000" });
+    sdkRef.current = sdk;
+
+    fetch("/api/socket/token")
+      .then(r => r.json())
+      .then(({ token }) => {
+        sdk.on("connected", () => {
+          sdk.subscribe(channel).on("order.created", (data) => {
+            setOrders(prev => [...prev, data]);
+          });
+        });
+        sdk.connect(token);
+      });
+
+    return () => { sdk.disconnect(); };
+  }, [channel]);
+
+  return orders;
+}
+
+// pages/dashboard.tsx
+export default function Dashboard() {
+  const orders = useRealtimeOrder("orders");
+  return (
+    <ul>
+      {orders.map((o, i) => <li key={i}>Order #{o.order_id}: Rp {o.amount}</li>)}
+    </ul>
+  );
+}
+      `}</CodeBlock>
+
+      <h2 id="token">Getting a JWT Token</h2>
+      <p>The gateway requires a JWT for WebSocket authentication. The dashboard provides a <code>/api/socket/token</code> endpoint for development. In production, generate JWTs server-side:</p>
+      <CodeBlock language="ts">{`
+// Your backend generates the JWT:
+import { SignJWT } from "jose";
+
+const token = await new SignJWT({ user_id: "123", role: "admin" })
+  .setProtectedHeader({ alg: "HS256" })
+  .setExpirationTime("24h")
+  .sign(new TextEncoder().encode(process.env.JWT_SECRET!));
+      `}</CodeBlock>
+
+      <h2 id="subscribe">Subscribing to Events</h2>
+      <CodeBlock language="ts">{`
+// Public channel
+gw.subscribe('alerts').on('alert.created', handler)
+
+// Private channel (requires auth)
+gw.subscribe('private-orders.99', {
+  auth: async ({ socket_id, channel_name }) => {
+    const res = await fetch('/api/socket/auth', {
+      method: 'POST', body: JSON.stringify({ socket_id, channel_name }),
+    })
+    return res.json()
+  }
+})
+
+// Presence channel
+gw.subscribe('presence-lobby', {
+  auth: async ({ socket_id, channel_name }) => {
+    const res = await fetch('/api/socket/auth', {
+      method: 'POST',
+      body: JSON.stringify({ socket_id, channel_name, user_id: '123', user_info: { name: 'Budi' } }),
+    })
+    return res.json()
+  }
+}).on('member_added', (m) => console.log(m.user_info.name, 'joined'))
+      `}</CodeBlock>
+
+      <h2 id="publish">Publishing from the Browser</h2>
+      <Callout type="warning">The REST publish endpoint requires authentication. Use <code>X-App-Key</code> + <code>X-Signature</code> headers, or a session cookie.</Callout>
+      <CodeBlock language="ts">{`
+// Via REST API (with session cookie)
+await fetch('/api/v1/events', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    channel: 'orders',
+    event: 'order.paid',
+    data: { order_id: 1, amount: 250000 },
+  }),
+})
+      `}</CodeBlock>
+      <p>For production, publish from your backend — never expose secrets in the browser.</p>
+
+      <h2 id="next">Next Steps</h2>
+      <ul>
+        <li>Read the full <a href="/docs/javascript-sdk">JavaScript SDK reference</a> for all methods and types.</li>
+        <li>Check <a href="/docs/presence">Presence Channels</a> for real-time user tracking.</li>
+        <li>See <a href="/docs/tutorial-php">PHP Integration Guide</a> for backend event publishing.</li>
+      </ul>
+    </>),
+  },
+
   // ──────────────────────────────────────────────
   // GETTING STARTED
   // ──────────────────────────────────────────────
