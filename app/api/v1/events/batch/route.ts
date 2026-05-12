@@ -15,6 +15,6 @@ export async function POST(request: NextRequest) {
       return check.ok ? { index, status: "published" } : { index, error: check.error };
     });
     const fails = results.filter((r: { error?: string }) => r.error).length;
-    return NextResponse.json({ published: batch.length - fails, failed: fails, results }, { status: fails > 0 ? 207 : 200 });
+    return NextResponse.json({ data: { published: batch.length - fails, failed: fails, results } }, { status: fails > 0 ? 207 : 200 });
   } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
 }
