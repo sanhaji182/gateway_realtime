@@ -4,7 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, MoreHorizontal, Plus, Search, Sparkles, X } from "lucide-react";
+import { ExternalLink, MoreHorizontal, Plus, Search, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/Button";
@@ -29,13 +29,13 @@ export default function AppsPage() {
   const { data, error, isLoading, mutate } = useSWR(["apps", search, status, sort, page], () => gatewayApi.apps.list({ search, status: status === "all" ? undefined : status, sort: sort === "events" ? "events" : sort, page, per_page: perPage }));
 
   const columns = useMemo<DataTableColumn<AppListItem>[]>(() => [
-    { accessorKey: "name", header: () => <SortBtn label="App Name" active={sort === "name"} onClick={() => setSort("name")} />, cell: ({ row }) => <Link href={`/apps/${row.original.id}`} className="font-medium text-primary hover:text-accent" onClick={(e) => e.stopPropagation()}>{row.original.name}</Link> },
+    { accessorKey: "name", header: () => <SortBtn label="Name" active={sort === "name"} onClick={() => setSort("name")} />, cell: ({ row }) => <Link href={`/apps/${row.original.id}`} className="font-medium text-primary hover:text-accent" onClick={(e) => e.stopPropagation()}>{row.original.name}</Link> },
     { accessorKey: "id", header: "App ID", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.id}</span> },
     { accessorKey: "status", header: () => <SortBtn label="Status" active={sort === "status"} onClick={() => setSort("status")} />, cell: ({ row }) => <StatusBadge variant={row.original.status === "active" ? "success" : "neutral"}>{row.original.status}</StatusBadge> },
     { accessorKey: "connections", header: () => <SortBtn label="Connections" active={sort === "connections"} onClick={() => setSort("connections")} />, cell: ({ row }) => row.original.connections },
     { accessorKey: "events_today", header: () => <SortBtn label="Events Today" active={sort === "events"} onClick={() => setSort("events")} />, cell: ({ row }) => row.original.events_today },
     { accessorKey: "updated_at", header: "Updated", cell: ({ row }) => relativeTime(row.original.updated_at) },
-    { id: "actions", header: "", cell: ({ row }) => row.original.status === "active" ? <ActionsMenu app={row.original} /> : <span className="text-[11px] text-muted">disabled</span> },
+    { id: "actions", header: "", cell: ({ row }) => <ActionsMenu app={row.original} /> },
   ], [sort]);
 
   const hasFilters = !!search || status !== "all";
@@ -47,14 +47,9 @@ export default function AppsPage() {
           <h1 className="page-title">Apps</h1>
           <p className="mt-0.5 text-[12px] text-muted">Manage apps, API keys, and webhook endpoints.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" className="gap-1.5">
-            <Sparkles className="h-3.5 w-3.5" />AI Group
-          </Button>
-          <Button variant="primary" size="sm" onClick={() => setNewOpen(true)}>
-            <Plus className="mr-1 h-3.5 w-3.5" />New App
-          </Button>
-        </div>
+        <Button variant="primary" size="sm" onClick={() => setNewOpen(true)}>
+          <Plus className="mr-1 h-3.5 w-3.5" />New App
+        </Button>
       </div>
 
       <FilterBar
@@ -77,22 +72,23 @@ export default function AppsPage() {
         </div>
       </div>
 
-      <NewAppModal open={newOpen} onOpenChange={setNewOpen} onCreated={() => { setNewOpen(false); mutate(); }} />
+      <NewAppModal open={newOpen} onOpenChange={setNewOpen} onCreated={() => { setNewOpen(false); setPage(1); mutate(); }} />
     </div>
   );
 }
 
-function NewAppModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated: () => void }) {
+function NewAppModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; onCreated: () => void }) {
   const [name, setName] = useState("");
   const [environment, setEnvironment] = useState("production");
   const [originUrl, setOriginUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError("App name is required."); return; }
     setIsLoading(true);
+    setError("");
     try {
       await gatewayApi.apps.create({ name, environment } as any);
       toast.success("App created");
@@ -119,10 +115,9 @@ function NewAppModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenC
                 <option value="staging">Staging</option>
                 <option value="development">Development</option>
                 <option value="testing">Testing</option>
-                <option value="sandbox">Sandbox</option>
               </select>
             </label>
-            <Input name="url" label="Allowed Origin (optional)" value={originUrl} onChange={(e) => setOriginUrl(e.target.value)} placeholder="https://my-app.com" />
+            <Input name="url" label="Allowed Origin" value={originUrl} onChange={(e) => setOriginUrl(e.target.value)} placeholder="https://my-app.com" />
             {error ? <p className="text-[12px] text-error">{error}</p> : null}
             <Button type="submit" variant="primary" loading={isLoading} className="w-full">Create App</Button>
           </form>
@@ -141,7 +136,7 @@ function ActionsMenu({ app }: { app: AppListItem }) {
       <DropdownMenu.Portal>
         <DropdownMenu.Content className="z-50 min-w-[140px] rounded border bg-surface p-1 shadow-sm" align="end">
           <DropdownMenu.Item asChild><Link href={`/apps/${app.id}`} className="block cursor-pointer rounded px-2 py-1.5 text-[13px] text-secondary hover:bg-hover hover:text-primary outline-none">View Details</Link></DropdownMenu.Item>
-          <DropdownMenu.Item className="cursor-pointer rounded px-2 py-1.5 text-[13px] text-secondary hover:bg-hover hover:text-primary outline-none">Refresh Data</DropdownMenu.Item>
+          <DropdownMenu.Item asChild><Link href={`/apps/${app.id}`} className="block cursor-pointer rounded px-2 py-1.5 text-[13px] text-secondary hover:bg-hover hover:text-primary outline-none">API Credentials</Link></DropdownMenu.Item>
           <DropdownMenu.Item className="cursor-pointer rounded px-2 py-1.5 text-[13px] text-error hover:bg-error-subtle outline-none">Deactivate</DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
@@ -156,8 +151,8 @@ function SortBtn({ label, active, onClick }: { label: string; active: boolean; o
 function Filters({ value, onChange, sort, onSortChange }: { value: "all" | AppStatus; onChange: (v: "all" | AppStatus) => void; sort: "name" | "status" | "connections" | "events"; onSortChange: (v: "name" | "status" | "connections" | "events") => void }) {
   const s = value !== "all" ? "h-8 rounded border border-accent bg-surface px-2.5 text-[13px] focus:outline-none" : "h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none";
   return <>
-    <select value={value} onChange={(e) => onChange(e.target.value as "all" | AppStatus)} className={s}><option value="all">All status</option><option value="active">Active</option><option value="inactive">Paused</option></select>
-    <select value={sort} onChange={(e) => onSortChange(e.target.value as "name" | "status" | "connections" | "events")} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="name">Name</option><option value="status">Status</option><option value="connections">Sources</option><option value="events">Updates</option></select>
+    <select value={value} onChange={(e) => onChange(e.target.value as "all" | AppStatus)} className={s}><option value="all">All status</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+    <select value={sort} onChange={(e) => onSortChange(e.target.value as "name" | "status" | "connections" | "events")} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="name">Name</option><option value="status">Status</option><option value="connections">Connections</option><option value="events">Events</option></select>
   </>;
 }
 

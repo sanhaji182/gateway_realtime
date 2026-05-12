@@ -128,7 +128,7 @@ function RecentTable({ data, onRowClick }: { data: EventItem[]; onRowClick: (e: 
     { accessorKey: "published_at", header: "Time", cell: ({ row }) => formatDateTime(row.original.published_at), meta: { mono: true } },
     { accessorKey: "app_name", header: "App" },
     { accessorKey: "channel", header: "Channel", meta: { mono: true } },
-    { accessorKey: "event", header: "Action", meta: { mono: true } },
+    { accessorKey: "event", header: "Event", meta: { mono: true } },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge variant={row.original.status === "ok" ? "success" : "error"}>{row.original.status}</StatusBadge> },
   ], []);
   return <DataTable columns={columns} data={data} onRowClick={onRowClick} />;

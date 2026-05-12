@@ -77,7 +77,7 @@ export default function WebhooksPage() {
 function Filters({ appId, onAppChange, status, onStatusChange, apps }: { appId: string; onAppChange: (v: string) => void; status: string; onStatusChange: (v: "all" | WebhookLogStatus) => void; apps: [string, string][] }) {
   return <>
     <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All apps</option>{apps.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
-    <select value={status} onChange={(e) => onStatusChange(e.target.value as "all" | WebhookLogStatus)} className={status !== "all" ? "h-8 rounded border border-accent bg-surface px-2.5 text-[13px] focus:outline-none" : "h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"}><option value="all">All status</option><option value="success">Matched</option><option value="failed">Mismatch</option><option value="retrying">Pending</option></select>
+    <select value={status} onChange={(e) => onStatusChange(e.target.value as "all" | WebhookLogStatus)} className={status !== "all" ? "h-8 rounded border border-accent bg-surface px-2.5 text-[13px] focus:outline-none" : "h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"}><option value="all">All status</option><option value="success">Success</option><option value="failed">Failed</option><option value="retrying">Pending</option></select>
   </>;
 }
 function SkeletonTable() { return <div className="rounded border bg-surface">{Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} columns={7} />)}</div>; }

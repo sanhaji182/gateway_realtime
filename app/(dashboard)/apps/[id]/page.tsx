@@ -95,7 +95,7 @@ export default function AppDetailPage() {
         {events?.length ? <ActivityTable data={events.slice(0, 10)} /> : <EmptyState icon={Radio} title="No activity" description="Event activity appears here." />}
       </section>
 
-      <ConfirmDialog open={disableOpen} onOpenChange={setDisableOpen} title="Deactivate" description="This will deactivate the app. Existing data will be preserved." confirmLabel="Deactivate" onConfirm={() => { setDisableOpen(false); mutate({ ...app, status: "inactive" }, false); toast.success("Active paused"); }} />
+      <ConfirmDialog open={disableOpen} onOpenChange={setDisableOpen} title="Deactivate" description="This will deactivate the app. Existing data will be preserved." confirmLabel="Deactivate" onConfirm={() => { setDisableOpen(false); mutate({ ...app, status: "inactive" }, false); toast.success("App deactivated"); }} />
     </div>
   );
 }
