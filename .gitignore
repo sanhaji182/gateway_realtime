@@ -34,3 +34,4 @@ Thumbs.db
 # Binary/doc files not needed in repo
 backend_go/*.docx
 .commandcode/
+dump.rdb
