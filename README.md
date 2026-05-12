@@ -5,12 +5,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)]()
 [![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8)]()
 [![Version](https://img.shields.io/badge/version-0.1.0-blue)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 > 🇮🇩 [Bahasa Indonesia](./README.id.md)
 
 # Gateway Realtime
 
-Self-hosted realtime event system for internal apps — like Pusher, but running on your own infrastructure. Next.js 16 Dashboard + Go WebSocket Backend + Redis pub/sub.
+Self-hosted realtime event system — like Pusher, but free, open source, and running on your own infrastructure. Next.js 16 Dashboard + Go WebSocket Backend + Redis pub/sub.
 
 > **🤖 AI-Assisted Development** — This project was built with AI code generation as a productivity tool, guided and reviewed by a human developer. Every line of code has been verified and tested before reaching production.
 
@@ -50,7 +51,11 @@ Self-hosted realtime event system for internal apps — like Pusher, but running
 └─────────────────────────────────────────────────────────────┘
 ```
 
+
+> 💡 **Why Gateway?** Most realtime services charge per message or lock you into their cloud. Gateway is MIT licensed — self-host it, own your data, and pay nothing. [Contribute on GitHub →](https://github.com/sanhaji182/gateway_realtime)
+
 ## Features
+
 
 - **Admin Dashboard** — Overview, Apps, Connections, Events, Webhooks, Settings, Admin Users, Environment
 - **WebSocket Gateway** — Go server with Redis pub/sub, JWT auth, channel management

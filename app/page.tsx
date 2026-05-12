@@ -96,19 +96,28 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 text-center">
-        <div className="max-w-lg mx-auto rounded-2xl border bg-surface p-10 shadow-sm">
-          <Sparkles className="mx-auto h-8 w-8 text-accent mb-4" />
-          <h2 className="text-2xl font-bold tracking-[-0.02em]">Ready to go realtime?</h2>
-          <p className="mt-3 text-[15px] text-secondary leading-relaxed">
-            Clone the repo, run one command, and start publishing events. No registration. No API keys. Just code.
+      <section className="py-20 text-center">
+        <div className="max-w-2xl mx-auto">
+          <Sparkles className="mx-auto h-10 w-10 text-accent mb-5" />
+          <h2 className="text-3xl font-bold tracking-[-0.03em]">Free. Open source. Community-driven.</h2>
+          <p className="mt-4 text-[16px] text-secondary leading-relaxed max-w-lg mx-auto">
+            This project is MIT licensed and built in the open. Use it, fork it, contribute to it.
+            Every pull request, bug report, and star makes it better for everyone.
           </p>
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <Link href="/docs/installation" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-[14px] font-semibold text-white shadow-sm shadow-accent-glow transition-all hover:bg-accent-hover">
+          <div className="mt-8 flex items-center justify-center gap-3 flex-wrap">
+            <a href="https://github.com/sanhaji182/gateway_realtime" className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-[14px] font-semibold text-white shadow-sm shadow-accent-glow transition-all hover:bg-accent-hover hover:shadow-md">
+              ⭐ Star on GitHub
+            </a>
+            <Link href="/docs/installation" className="inline-flex items-center gap-2 rounded-lg border bg-surface px-6 py-3 text-[14px] font-medium transition-all hover:bg-hover shadow-xs">
               Get Started <ArrowRight className="h-4 w-4" />
             </Link>
-            <a href="https://github.com/sanhaji182/gateway_realtime" className="inline-flex items-center rounded-lg border bg-surface px-5 py-2.5 text-[14px] font-medium transition-all hover:bg-hover">GitHub</a>
+            <Link href="/docs" className="inline-flex items-center gap-2 rounded-lg border bg-surface px-6 py-3 text-[14px] font-medium transition-all hover:bg-hover shadow-xs">
+              <BookOpen className="h-4 w-4" /> Documentation
+            </Link>
           </div>
+          <p className="mt-6 text-[13px] text-muted">
+            {/* GitHub stars placeholder */}MIT Licensed · Built by <a href="https://www.linkedin.com/in/sansanhaji/" className="text-secondary hover:text-primary underline-offset-2 hover:underline">Sonick Sanhaji</a>
+          </p>
         </div>
       </section>
 
