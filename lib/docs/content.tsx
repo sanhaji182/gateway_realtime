@@ -1664,7 +1664,98 @@ upstream gateway_ws {
       <p>With sticky sessions, a single user always connects to the same instance. User notifications are local. Channel broadcasts still work across all instances via Redis.</p>
     </>),
   },
-  troubleshooting: {
+  "security": {
+    toc: [
+      { id: "overview", title: "Security Model" },
+      { id: "session", title: "Session Tokens" },
+      { id: "app-secrets", title: "App Secrets" },
+      { id: "csrf", title: "CSRF Protection" },
+      { id: "hmac", title: "HMAC Verification" },
+      { id: "checklist", title: "Production Checklist" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Security Model</h2>
+      <p>Gateway Realtime uses multiple layers of cryptographic protection. Every authentication path is independently secured.</p>
+      <table><thead><tr><th>Layer</th><th>Mechanism</th></tr></thead><tbody><tr><td>Dashboard Login</td><td>Signed JWT cookie (HMAC-SHA256)</td></tr><tr><td>WebSocket Handshake</td><td>JWT in cookie or header (HMAC-SHA256)</td></tr><tr><td>REST API Publish</td><td>HMAC-SHA256 (X-App-Key + X-Signature)</td></tr><tr><td>Private Channels</td><td>HMAC-SHA256 channel auth</td></tr><tr><td>Webhook Delivery</td><td>HMAC-SHA256 signature</td></tr><tr><td>Mutation Endpoints</td><td>CSRF token</td></tr></tbody></table>
+      <h2 id="session">Session Tokens</h2>
+      <p>Dashboard authentication uses <strong>signed JWT cookies</strong> with HMAC-SHA256 and timing-safe verification — not plain base64.</p>
+      <Callout type="info">Replace the demo user store with a real database and bcrypt for production.</Callout>
+      <h2 id="app-secrets">App Secrets</h2>
+      <p>Secrets are loaded from <code>GATEWAY_APP_SECRETS</code> environment variable. No secrets in the codebase.</p>
+      <CodeBlock language="bash">{`
+GATEWAY_APP_SECRETS=app_id:pk_live_xxx:sk_live_yyy
+      `}</CodeBlock>
+      <Callout type="warning">Never commit .env files. Rotate secrets immediately if exposed.</Callout>
+      <h2 id="csrf">CSRF Protection</h2>
+      <p>Mutation endpoints require CSRF token from <code>GET /api/v1/settings</code> in the <code>X-CSRF-Token</code> header.</p>
+      <h2 id="hmac">HMAC Signature Verification</h2>
+      <p>All HMAC comparisons use timing-safe operations: hmac.Equal (Go), crypto.timingSafeEqual (TypeScript).</p>
+      <h2 id="checklist">Production Checklist</h2>
+      <table><thead><tr><th>#</th><th>Check</th><th>Status</th></tr></thead><tbody><tr><td>1</td><td>JWT_SECRET 64+ random chars</td><td>Required</td></tr><tr><td>2</td><td>ALLOWED_ORIGINS explicit list</td><td>Required</td></tr><tr><td>3</td><td>GATEWAY_APP_SECRETS configured</td><td>Required</td></tr><tr><td>4</td><td>HTTPS/TLS (nginx + Let` + "'" + `s Encrypt)</td><td>Required</td></tr><tr><td>5</td><td>Security headers active</td><td>Built-in</td></tr><tr><td>6</td><td>CSRF tokens on all mutations</td><td>Built-in</td></tr><tr><td>7</td><td>Demo auth replaced with real DB</td><td>Production</td></tr><tr><td>8</td><td>Rate limiting (SaaS Cloud)</td><td>Optional</td></tr></tbody></table>
+      <p>Report vulnerabilities: <a href="https://github.com/sanhaji182/gateway_realtime/security">GitHub Security</a>.</p>
+    </>),
+  },
+  "saas-extensions": {
+    toc: [
+      { id: "overview", title: "Open-Core Architecture" },
+      { id: "authenticator", title: "Authenticator" },
+      { id: "ratelimiter", title: "Rate Limiter" },
+      { id: "eventhook", title: "Event Hook" },
+      { id: "injection", title: "Extension Injection" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Open-Core Architecture</h2>
+      <p>Gateway Realtime uses <strong>extension points</strong> to add SaaS features without modifying the MIT-licensed core. Three interfaces:</p>
+      <CodeBlock language="go">{`
+type ExtensionPoints struct {
+    Auth        Authenticator   // multi-tenant, OAuth, API keys
+    RateLimiter RateLimiter     // plan-based rate limits
+    EventHook   EventHook       // billing, analytics, audit
+}
+      `}</CodeBlock>
+      <h2 id="authenticator">Authenticator</h2>
+      <p>Validate X-Tenant-Key headers against PostgreSQL:</p>
+      <CodeBlock language="go">{`
+type Authenticator interface {
+    Authenticate(r *http.Request) (userID, tenantID string, ok bool)
+}
+      `}</CodeBlock>
+      <h2 id="ratelimiter">Rate Limiter</h2>
+      <p>Redis token bucket: Free 100/min, Pro 10k/min, Enterprise 100k/min.</p>
+      <h2 id="eventhook">Event Hook</h2>
+      <p>Track OnConnect, OnDisconnect, OnSubscribe, OnUnsubscribe, OnPublish for billing.</p>
+      <h2 id="injection">Extension Injection</h2>
+      <p>Build a SaaS binary that injects implementations:</p>
+      <CodeBlock language="go">{`
+mux.Handle("/ws", handler.WSHandler{
+    Auth:        cloud.TenantAuthenticator{DB: db},
+    RateLimiter: cloud.PlanRateLimiter{Redis: rdb, DB: db},
+    EventHook:   cloud.NewUsageTracker(db),
+})
+      `}</CodeBlock>
+      <p>Core Gateway upgrades independently — interface signatures are the contract.</p>
+    </>),
+  },
+  "changelog": {
+    toc: [
+      { id: "v032", title: "v0.3.2 — Security" },
+      { id: "v030", title: "v0.3.0 — Docs & DX" },
+      { id: "v020", title: "v0.2.0 — Open Source" },
+      { id: "v010", title: "v0.1.0 — Initial" },
+    ],
+    render: () => (<>
+      <p>Full changelog: <a href="https://github.com/sanhaji182/gateway_realtime/blob/master/CHANGELOG.md">CHANGELOG.md on GitHub</a>.</p>
+      <h2 id="v032">v0.3.2 — Security Release</h2>
+      <ul><li>Session: base64 → signed JWT (HMAC-SHA256, timing-safe verify)</li><li>Secrets: hardcoded → GATEWAY_APP_SECRETS env var</li><li>WS auth: cookie-first, query param fallback</li><li>CSRF protection on mutation endpoints</li></ul>
+      <h2 id="v030">v0.3.0 — Docs & Developer Experience</h2>
+      <ul><li>27-page docs portal: tutorials, API, operations, security</li><li>Bilingual README (EN + ID)</li><li>SaaS Frontend (landing, signup, login, dashboard)</li></ul>
+      <h2 id="v020">v0.2.0 — Open-Source Ready</h2>
+      <ul><li>MIT license, CODE_OF_CONDUCT, SECURITY</li><li>CI/CD pipeline</li><li>SaaS extension points (Authenticator, RateLimiter, EventHook)</li></ul>
+      <h2 id="v010">v0.1.0 — Initial Release</h2>
+      <ul><li>Next.js 16 Dashboard (9 routes)</li><li>Go WebSocket Gateway (Redis pub/sub, JWT)</li><li>TypeScript SDK (28 tests)</li><li>PHP SDK, webhooks, Docker Compose</li></ul>
+    </>),
+  },
+    troubleshooting: {
     toc: [
       { id: "connection-refused", title: "WebSocket Connection Refused" },
       { id: "jwt-invalid", title: "JWT Invalid / Expired" },
