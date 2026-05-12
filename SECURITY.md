@@ -20,9 +20,9 @@ We take all security reports seriously. You can expect:
 
 Gateway Realtime uses:
 
-- **JWT HMAC-SHA256** for WebSocket authentication
+- **JWT HMAC-SHA256 (signed session + WebSocket)** for WebSocket authentication
 - **HMAC-SHA256** signatures for REST API publish requests
 - **Redis ACL** support (configure via `REDIS_URL`)
-- **Cookie-based session** for dashboard (demo auth — replace for production)
+- **Cookie-based signed JWT session** for dashboard (demo auth — replace for production)
 
 We recommend deploying behind a reverse proxy (nginx / Caddy) with TLS termination.

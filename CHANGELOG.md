@@ -2,6 +2,17 @@
 
 ## v0.3.1 — 2026-05-12
 
+## v0.3.2 — 2026-05-12
+
+### Security
+- 🔴 **Session token**: plain base64 → signed JWT (HMAC-SHA256) dengan timing-safe verify
+- 🔴 **App secrets**: hardcoded di public repo → load dari env `GATEWAY_APP_SECRETS`
+- 🟡 **WebSocket auth**: token dibaca dari cookie `gateway_session` dulu, query param sebagai fallback
+- 🟡 **HMAC compare**: `===` → `timingSafeEqual` di TypeScript (Go sudah `hmac.Equal`)
+- 🟡 **CSRF protection**: signed token + verify di `POST /api/v1/events` + endpoint `GET /api/v1/settings`
+- 📄 **SECURITY.md**: diperbarui dengan detail mekanisme auth baru
+
+
 ### Changed
 - **Sidebar labels disesuaikan dengan fungsi sebenarnya**: Products → Apps, Marketplaces → Connections, Intelligence → Events, Price Compare → Webhooks
 - **Overview heading & KPIs**: Marketplace Intelligence → Gateway Dashboard, Tracked Products → Active Connections, Active Scrapers → Events/Minute, Marketplace Health → Service Health
