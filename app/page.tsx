@@ -95,6 +95,38 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* Live Demo */}
+      <section className="py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-bold tracking-[-0.02em]">Try it live — no signup</h2>
+          <p className="mt-2 text-[15px] text-secondary">Open the dashboard, connect to WebSocket, and publish events in realtime.</p>
+        </div>
+        <div className="grid gap-5 max-w-3xl mx-auto sm:grid-cols-2">
+          <a href="/playground" className="card-hover group rounded-xl border bg-surface p-6 shadow-xs text-left">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/8">
+              <Zap className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
+            </div>
+            <h3 className="text-[15px] font-semibold">WebSocket Playground</h3>
+            <p className="mt-2 text-[13px] text-secondary leading-relaxed">Connect, subscribe to channels, publish events, and see them live. No setup needed.</p>
+            <span className="mt-4 inline-flex items-center gap-1 text-[13px] font-medium text-accent group-hover:underline">
+              Open Playground <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </a>
+          <a href="/login" className="card-hover group rounded-xl border bg-surface p-6 shadow-xs text-left">
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-accent/8">
+              <BarChart3 className="h-5 w-5 text-accent group-hover:scale-110 transition-transform" />
+            </div>
+            <h3 className="text-[15px] font-semibold">Dashboard Demo</h3>
+            <p className="mt-2 text-[13px] text-secondary leading-relaxed">Full admin panel — overview, apps, connections, events, webhooks, settings.</p>
+            <div className="mt-3 rounded-lg border bg-subtle p-3 text-[12px]">
+              <div className="flex justify-between"><span className="text-muted">Email</span><code className="text-primary font-mono">admin@gateway.local</code></div>
+              <div className="flex justify-between mt-1"><span className="text-muted">Password</span><code className="text-primary font-mono">password</code></div>
+            </div>
+          </a>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 text-center">
         <div className="max-w-2xl mx-auto">
