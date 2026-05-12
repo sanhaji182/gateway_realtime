@@ -27,7 +27,7 @@ export default function WebhooksPage() {
     { accessorKey: "triggered_at", header: "Time", meta: { mono: true }, cell: ({ row }) => formatTime(row.original.triggered_at) },
     { accessorKey: "app_name", header: "App" },
     { accessorKey: "endpoint_url", header: "Endpoint", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.endpoint_url}</span> },
-    { accessorKey: "event", header: "Change", meta: { mono: true } },
+    { accessorKey: "event", header: "Event", meta: { mono: true } },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge variant={statusV(row.original.status)}>{row.original.status}</StatusBadge> },
     { accessorKey: "latency_ms", header: "Latency", cell: ({ row }) => `${row.original.latency_ms}ms` },
     { accessorKey: "http_code", header: "Code", cell: ({ row }) => <span className={row.original.http_code >= 400 ? "text-error" : "text-success"}>{row.original.http_code}</span> },
@@ -43,9 +43,9 @@ export default function WebhooksPage() {
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) : (
           <>
-            <KPICard label="Match Rate" value={`${metrics.successRate}%`} color="success" icon={TrendingUp} />
+            <KPICard label="Success Rate" value={`${metrics.successRate}%`} color="success" icon={TrendingUp} />
             <KPICard label="Avg Latency" value={`${metrics.avgLatency}ms`} color="primary" icon={Activity} />
-            <KPICard label="Mismatches" value={metrics.failed} color="error" subtitle="Last 24h" icon={Activity} />
+            <KPICard label="Failed" value={metrics.failed} color="error" subtitle="Last 24h" icon={Activity} />
             <KPICard label="Pending" value={metrics.retrying} color="warning" />
           </>
         )}

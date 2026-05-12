@@ -30,11 +30,11 @@ export default function AppsPage() {
 
   const columns = useMemo<DataTableColumn<AppListItem>[]>(() => [
     { accessorKey: "name", header: () => <SortBtn label="App Name" active={sort === "name"} onClick={() => setSort("name")} />, cell: ({ row }) => <Link href={`/apps/${row.original.id}`} className="font-medium text-primary hover:text-accent" onClick={(e) => e.stopPropagation()}>{row.original.name}</Link> },
-    { accessorKey: "id", header: "SKU", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.id}</span> },
+    { accessorKey: "id", header: "App ID", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.id}</span> },
     { accessorKey: "status", header: () => <SortBtn label="Status" active={sort === "status"} onClick={() => setSort("status")} />, cell: ({ row }) => <StatusBadge variant={row.original.status === "active" ? "success" : "neutral"}>{row.original.status}</StatusBadge> },
-    { accessorKey: "connections", header: () => <SortBtn label="Sources" active={sort === "connections"} onClick={() => setSort("connections")} />, cell: ({ row }) => row.original.connections },
-    { accessorKey: "events_today", header: () => <SortBtn label="Updates" active={sort === "events"} onClick={() => setSort("events")} />, cell: ({ row }) => row.original.events_today },
-    { accessorKey: "updated_at", header: "Last Scraped", cell: ({ row }) => relativeTime(row.original.updated_at) },
+    { accessorKey: "connections", header: () => <SortBtn label="Connections" active={sort === "connections"} onClick={() => setSort("connections")} />, cell: ({ row }) => row.original.connections },
+    { accessorKey: "events_today", header: () => <SortBtn label="Events Today" active={sort === "events"} onClick={() => setSort("events")} />, cell: ({ row }) => row.original.events_today },
+    { accessorKey: "updated_at", header: "Updated", cell: ({ row }) => relativeTime(row.original.updated_at) },
     { id: "actions", header: "", cell: ({ row }) => row.original.status === "active" ? <ActionsMenu app={row.original} /> : <span className="text-[11px] text-muted">disabled</span> },
   ], [sort]);
 
@@ -124,7 +124,7 @@ function NewAppModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenC
             </label>
             <Input name="url" label="Allowed Origin (optional)" value={originUrl} onChange={(e) => setOriginUrl(e.target.value)} placeholder="https://my-app.com" />
             {error ? <p className="text-[12px] text-error">{error}</p> : null}
-            <Button type="submit" variant="primary" loading={isLoading} className="w-full">Start Tracking</Button>
+            <Button type="submit" variant="primary" loading={isLoading} className="w-full">Create App</Button>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
@@ -142,7 +142,7 @@ function ActionsMenu({ app }: { app: AppListItem }) {
         <DropdownMenu.Content className="z-50 min-w-[140px] rounded border bg-surface p-1 shadow-sm" align="end">
           <DropdownMenu.Item asChild><Link href={`/apps/${app.id}`} className="block cursor-pointer rounded px-2 py-1.5 text-[13px] text-secondary hover:bg-hover hover:text-primary outline-none">View Details</Link></DropdownMenu.Item>
           <DropdownMenu.Item className="cursor-pointer rounded px-2 py-1.5 text-[13px] text-secondary hover:bg-hover hover:text-primary outline-none">Refresh Data</DropdownMenu.Item>
-          <DropdownMenu.Item className="cursor-pointer rounded px-2 py-1.5 text-[13px] text-error hover:bg-error-subtle outline-none">Stop Tracking</DropdownMenu.Item>
+          <DropdownMenu.Item className="cursor-pointer rounded px-2 py-1.5 text-[13px] text-error hover:bg-error-subtle outline-none">Deactivate</DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

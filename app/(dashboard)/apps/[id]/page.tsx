@@ -79,7 +79,7 @@ export default function AppDetailPage() {
                   <span className="text-[13px] font-medium text-primary">{mp}</span>
                 </div>
                 <span className={cn("text-[13px]", i === 0 ? "text-success" : i === 1 ? "text-primary" : "text-error")}>
-                  Rp {(12.5 - i * 0.4).toFixed(3)}.000
+                  (284 - i * 32).toLocaleString()
                 </span>
               </div>
             ))}

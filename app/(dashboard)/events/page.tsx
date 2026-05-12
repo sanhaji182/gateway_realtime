@@ -32,7 +32,7 @@ export default function EventsPage() {
     { accessorKey: "app_name", header: "App" },
     { accessorKey: "channel", header: "Channel", cell: ({ row }) => <button className="mono text-accent hover:underline" onClick={(e) => { e.stopPropagation(); setChannel(row.original.channel); setPage(1); }}>{row.original.channel}</button> },
     { accessorKey: "event", header: "Event", cell: ({ row }) => <button className="mono text-primary hover:underline" onClick={(e) => { e.stopPropagation(); setSearch(row.original.event); setPage(1); }}>{row.original.event}</button> },
-    { accessorKey: "source", header: "Source" },
+    { accessorKey: "source", header: "App" },
     { accessorKey: "size_bytes", header: "Size", cell: ({ row }) => formatBytes(row.original.size_bytes) },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge variant={row.original.status === "ok" ? "success" : "error"}>{row.original.status}</StatusBadge> },
   ], []);

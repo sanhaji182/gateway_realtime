@@ -185,11 +185,11 @@ export default function PlaygroundPage() {
           <div className="flex items-center justify-between border-b px-3 py-2"><h3 className="section-title">Channels</h3><span className="text-[11px] text-muted">{channels.length}</span></div>
           <div className="p-2">
             <form className="flex gap-1.5" onSubmit={(e) => { e.preventDefault(); if (channelInput.trim()) subscribeChannel(channelInput.trim()); }}>
-              <input value={channelInput} onChange={(e) => setChannelInput(e.target.value)} placeholder="orders.99" className="h-7 flex-1 rounded border bg-surface px-2 text-[12px] text-primary placeholder:text-muted focus:border-accent focus:outline-none" />
+              <input value={channelInput} onChange={(e) => setChannelInput(e.target.value)} placeholder="events" className="h-7 flex-1 rounded border bg-surface px-2 text-[12px] text-primary placeholder:text-muted focus:border-accent focus:outline-none" />
               <Button type="submit" variant="secondary" size="sm" className="h-7 px-2" disabled={!connected}>+</Button>
             </form>
             <div className="mt-2 space-y-0.5">
-              {[{ k: "orders.99" }, { k: "chat.55" }, { k: "presence.market" }, { k: "alerts" }].map((tpl) => (
+              {[{ k: "events" }, { k: "notifications" }, { k: "presence.lobby" }, { k: "alerts" }].map((tpl) => (
                 <button key={tpl.k} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-[12px] text-muted hover:bg-hover hover:text-secondary w-full text-left" onClick={() => subscribeChannel(tpl.k)}><Plus className="h-3 w-3 shrink-0" />{tpl.k}</button>
               ))}
             </div>
@@ -239,7 +239,7 @@ export default function PlaygroundPage() {
               <select value={eventInput} onChange={(e) => setEventInput(e.target.value)} className="h-8 w-full rounded border bg-surface px-2.5 text-[12px] focus:border-accent focus:outline-none">
                 <option value="message.new">message.new</option><option value="message.reply">message.reply</option>
                 <option value="typing.start">typing.start</option><option value="typing.stop">typing.stop</option>
-                <option value="order.paid">order.paid</option><option value="alert.created">alert.created</option>
+                <option value="event.triggered">event.triggered</option><option value="alert.created">alert.created</option>
               </select>
             </div>
             <div>
