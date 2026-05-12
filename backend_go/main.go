@@ -17,6 +17,7 @@ import (
 	"go-gateway/config"
 	"go-gateway/extensions"
 	"go-gateway/handler"
+	"go-gateway/ratelimit"
 	"go-gateway/hub"
 	redisSub "go-gateway/redis"
 
@@ -59,6 +60,8 @@ func main() {
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		logger.Error().Err(err).Msg("redis ping failed")
 	}
+	// Rate limiter: 10 req/s per IP, burst 20
+	ipLimiter := ratelimit.NewIPLimiter(10, 20)
 	h := hub.New(logger)
 	ctx, cancel := context.WithCancel(context.Background())
 	go (redisSub.Subscriber{Client: redisClient, Hub: h, Log: logger}).Run(ctx)
@@ -78,7 +81,7 @@ func main() {
 	})
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
-		Handler:           corsMiddleware(cfg.AllowedOrigins, mux),
+		Handler:           corsMiddleware(cfg.AllowedOrigins, ratelimit.HTTPMiddleware(ipLimiter)(mux)),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	go func() {
