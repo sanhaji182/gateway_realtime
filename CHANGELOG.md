@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.3.0 — 2026-05-12
+
+### Added
+- **SaaS Frontend** di `gateway_cloud/web/` — Next.js 16, landing page (hero, features grid, pricing table), signup, login via API key, tenant dashboard (usage stats per periode), settings page (copy API key, plan tiers, upgrade info)
+- **Bilingual README** — `README.md` (English) + `README.id.md` (Bahasa Indonesia) dengan link silang
+- **Author section** di README dengan LinkedIn profile
+- **AI transparency** — blurb di README bahwa project ini AI-assisted, human-architected & reviewed
+- **Agent Instructions** di `gateway_cloud/AGENTS.md` untuk koordinasi pengembangan SaaS layer
+
+### Changed
+- **SaaS_ARCHITECTURE.md**: Fase 5 (SaaS Frontend) ditandai ✅ DONE
+- **README**: rewrite full ke English, content tetap dengan tone profesional
+
+### Fixed
+- **JWT_SECRET sync**: `token/route.ts` fallback secret disamakan dengan Go Gateway core (`change-me-in-production-64-chars-min`)
+- **Docker build context**: `Dockerfile.cloud` sekarang copy `gateway/backend_go/` ke build context untuk resolve `replace` directive
+- **Port conflicts**: `docker-compose.full.yml` external port Redis → 6380, PostgreSQL → 5433
+- **Dashboard Dockerfile**: `public/` folder dibuat agar `COPY` tidak gagal
+
 ## v0.2.0 — 2026-05-12
 
 ### Added
@@ -24,28 +43,13 @@
 ### Security
 - `SECURITY.md` menambahkan panduan vulnerability reporting via GitHub private advisory
 
----
-
 ## v0.1.0 — 2026-05-11
 
 ### Added
-- **Realtime WebSocket Gateway** — Go server with Redis pub/sub, JWT auth, channel management
-- **Channels**: public, private, presence, wildcard, encrypted (AES-256-GCM)
-- **REST API** — publish events (single + batch), HMAC-SHA256 auth, app key/secret system
-- **Dashboard** — 10-page marketplace intelligence UI (Next.js 16, Tailwind)
-- **Realtime Playground** — WebSocket live stream, channel subscribe, HMAC-signed event publishing
-- **Order Notification System** — built-in simulator, real-time order feed with KPIs
-- **Developer Documentation** — portal di `/docs`, multi-language auth snippets (JS, Go, PHP, Python)
-- **TypeScript SDK** — framework-agnostic `lib/socket/` with GatewayClient, channel subscription, auto-reconnect
-- **PHP SDK** — `sdk/php/Client.php` — 5-line publish, HMAC auto-signing, batch support
-- **Browser SDK** — served from Go gateway at `/sdk/gateway.js`
-- **28 test cases** — `node:test` runner, 100% pass
-- **Docker Compose** — one-command deployment (Redis + Go gateway + Next.js)
-- **MIT License**
-
-### Security
-- HMAC-SHA256 REST publish auth (X-App-Key + X-Signature)
-- JWT WebSocket handshake
-- Private/presence channel HMAC subscription auth
-- Encrypted channels via AES-256-GCM + HKDF
-- Production security headers (CSP, CORS, frame options)
+- **Next.js 16 Dashboard** — App Router, Turbopack, 9 routes
+- **Go WebSocket Gateway** — Redis pub/sub, JWT auth, channel management
+- **TypeScript SDK** — `lib/socket/` framework-agnostic
+- **Webhook System** — delivery log, retry, monitoring
+- **28 test cases** — `node:test` untuk semua module socket
+- **PHP SDK** — `sdk/php/` untuk backend PHP
+- **Docker Compose** — Redis + Go Gateway + Next.js

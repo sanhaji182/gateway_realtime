@@ -200,11 +200,11 @@ Services di `docker-compose.prod.yml`:
 - [x] Dockerfile.cloud (multi-stage Go build)
 - [x] Full Go doc comments di semua file SaaS
 
-### Fase 5 — SaaS Frontend (NEXT)
-- [ ] Next.js app di `web/` — signup page, login, dashboard
-- [ ] Landing page marketing (hero, pricing, docs link)
-- [ ] Usage dashboard (chart events per tenant)
-- [ ] Tenant management UI (buat tenant, lihat API key)
+### ✅ Fase 5 — SaaS Frontend (DONE)
+- [x] Next.js app di `web/` — signup page, login, dashboard
+- [x] Landing page marketing (hero, pricing, docs link)
+- [x] Usage dashboard (chart events per tenant)
+- [x] Tenant management UI (buat tenant, lihat API key)
 
 ### Fase 6 — Production (NEXT)
 - [ ] Deploy ke Fly.io / Railway / VPS
