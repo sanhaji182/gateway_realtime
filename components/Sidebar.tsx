@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeftRight, BarChart3, Bell, Boxes, Radio, Search, Settings, Store, Zap, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, BarChart3, Bell, Boxes, Radio, Settings, Zap, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items: { href: string; icon: LucideIcon; label: string; shortcut?: string }[] = [
@@ -24,15 +24,19 @@ function NavItem({ href, icon: Icon, label, shortcut, onNavigate }: { href: stri
       href={href}
       onClick={onNavigate}
       className={cn(
-        "group flex h-8 items-center gap-2.5 rounded px-2.5 text-[13px] transition-colors",
+        "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition-all duration-150",
         active
-          ? "bg-accent-subtle text-accent font-medium"
+          ? "bg-accent/8 text-accent"
           : "text-secondary hover:bg-hover hover:text-primary"
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0", active ? "text-accent" : "text-muted group-hover:text-secondary")} />
-      <span className="flex-1 truncate">{label}</span>
-      {shortcut ? <span className="text-[10px] text-muted">{shortcut}</span> : null}
+      <Icon className={cn("h-[18px] w-[18px] shrink-0 transition-colors", active ? "text-accent" : "text-muted group-hover:text-secondary")} />
+      <span className="flex-1">{label}</span>
+      {shortcut ? (
+        <span className={cn("text-[10px] font-medium rounded px-1.5 py-0.5", active ? "bg-accent/15 text-accent" : "bg-subtle text-muted")}>
+          {shortcut}
+        </span>
+      ) : null}
     </Link>
   );
 }
@@ -40,25 +44,34 @@ function NavItem({ href, icon: Icon, label, shortcut, onNavigate }: { href: stri
 export function Sidebar({ mobileOpen = false, onMobileClose }: { mobileOpen?: boolean; onMobileClose?: () => void }) {
   return (
     <>
-      <div className={cn("fixed inset-0 z-40 bg-black/20 md:hidden", mobileOpen ? "block" : "hidden")} onClick={onMobileClose} />
+      <div className={cn("fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px] md:hidden transition-opacity", mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none")} onClick={onMobileClose} />
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-w)] flex-col border-r bg-surface transition-transform md:z-30 md:translate-x-0",
+        "fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-w)] flex-col border-r bg-surface/80 backdrop-blur-xl transition-transform duration-300 ease-out md:z-30 md:translate-x-0",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
-        <div className="flex h-12 items-center gap-2.5 border-b px-4">
-          <Search className="h-4 w-4 text-muted" />
-          <span className="text-[13px] font-semibold text-primary">Gateway</span>
-          <span className="ml-auto rounded bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-muted">BETA</span>
+        <div className="flex h-14 items-center gap-2.5 border-b px-5">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent shadow-sm shadow-accent-glow">
+            <Zap className="h-3.5 w-3.5 text-white" />
+          </div>
+          <div>
+            <span className="text-[14px] font-semibold tracking-[-0.01em] text-primary">Gateway</span>
+          </div>
+          <span className="ml-auto rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-semibold text-accent">v0.3</span>
         </div>
-        <nav className="flex-1 space-y-0.5 px-3 py-3">
+
+        <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
           {items.map((item) => (
             <NavItem key={item.href} {...item} onNavigate={onMobileClose} />
           ))}
         </nav>
-        <div className="border-t px-4 py-3">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-success shadow-[0_0_0_2px_var(--success-subtle)]" />
-            <span className="text-[12px] text-secondary">All systems operational</span>
+
+        <div className="border-t px-5 py-3.5">
+          <div className="flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+            </span>
+            <span className="text-[11px] font-medium text-secondary">All systems operational</span>
           </div>
         </div>
       </aside>

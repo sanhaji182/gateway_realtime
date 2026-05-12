@@ -7,18 +7,18 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded text-[13px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-1 disabled:pointer-events-none disabled:opacity-40",
+  "inline-flex items-center justify-center rounded-md text-[13px] font-medium transition-all duration-150 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-40 active:scale-[0.98]",
   {
     variants: {
       variant: {
-        primary: "h-8 bg-accent text-inverse px-3 hover:bg-accent-hover",
-        secondary: "h-8 border bg-surface text-secondary px-3 hover:bg-hover hover:text-primary shadow-sm",
-        ghost: "h-8 bg-transparent text-secondary px-2 hover:bg-hover hover:text-primary",
-        danger: "h-8 border border-error bg-error-subtle text-error px-3 hover:bg-error hover:text-inverse",
+        primary: "h-9 bg-accent text-inverse px-4 shadow-xs hover:bg-accent-hover hover:shadow-sm",
+        secondary: "h-9 border bg-surface text-secondary px-4 shadow-xs hover:bg-hover hover:text-primary hover:border-border-strong",
+        ghost: "h-9 bg-transparent text-secondary px-3 hover:bg-hover hover:text-primary",
+        danger: "h-9 border border-error/20 bg-error-subtle text-error px-4 hover:bg-error hover:text-white hover:border-error",
       },
       size: {
-        sm: "h-7 text-[12px] px-2.5",
-        md: "h-8 text-[13px] px-3",
+        sm: "h-8 text-[12px] px-3 rounded-md",
+        md: "h-9 text-[13px] px-4 rounded-md",
       },
     },
     defaultVariants: { variant: "secondary", size: "md" },

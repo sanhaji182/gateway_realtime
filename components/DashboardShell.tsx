@@ -12,7 +12,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <Sidebar mobileOpen={sidebarOpen} onMobileClose={() => setSidebarOpen(false)} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden md:pl-[var(--sidebar-w)]">
         <TopBar onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 overflow-y-auto px-5 py-5">{children}</main>
+        <main className="page-enter flex-1 overflow-y-auto px-6 py-6">{children}</main>
       </div>
     </div>
   );

@@ -3,105 +3,173 @@
 @tailwind utilities;
 
 :root {
-  --bg-base: #fafafa;
+  --bg-base: #f8f9fb;
   --bg-surface: #ffffff;
-  --bg-hover: #f5f5f5;
-  --bg-subtle: #f0f0f0;
-  --border: rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.10);
-  --text-primary: #171717;
-  --text-secondary: #525252;
-  --text-muted: #8c8c8c;
+  --bg-surface2: #fafbfc;
+  --bg-hover: #f1f3f6;
+  --bg-subtle: #edf0f4;
+  --bg-accent: #eef4ff;
+  --border: rgba(0, 0, 0, 0.05);
+  --border-strong: rgba(0, 0, 0, 0.09);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #8b9cb3;
   --text-inverse: #ffffff;
-  --accent: #0969da;
-  --accent-subtle: #ddf4ff;
-  --accent-hover: #0550ae;
-  --success: #1a7f37;
-  --success-subtle: #dafbe1;
-  --warning: #9a6700;
-  --warning-subtle: #fff8c5;
-  --error: #cf222e;
-  --error-subtle: #ffebe9;
-  --info: #0969da;
-  --info-subtle: #ddf4ff;
-  --teal: #1b7c83;
-  --teal-subtle: #daf5f7;
-  --radius-sm: 4px;
-  --radius: 6px;
-  --radius-md: 8px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-  --sidebar-w: 232px;
+  --accent: #3b5ccc;
+  --accent-subtle: #eef4ff;
+  --accent-hover: #2f4bb0;
+  --accent-glow: rgba(59, 92, 204, 0.15);
+  --success: #118c4a;
+  --success-subtle: #ecfdf5;
+  --warning: #b45309;
+  --warning-subtle: #fffbeb;
+  --error: #dc2626;
+  --error-subtle: #fef2f2;
+  --info: #0e7490;
+  --info-subtle: #ecfeff;
+  --teal: #0d9488;
+  --teal-subtle: #f0fdfa;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow: 0 1px 4px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+  --sidebar-w: 240px;
 }
 
 .dark {
-  --bg-base: #0d0d0d;
-  --bg-surface: #141414;
-  --bg-hover: #1c1c1c;
-  --bg-subtle: #1a1a1a;
+  --bg-base: #0b0f19;
+  --bg-surface: #111827;
+  --bg-surface2: #131a2a;
+  --bg-hover: #1a2236;
+  --bg-subtle: #162032;
+  --bg-accent: #1a2744;
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.10);
-  --text-primary: #e6e6e6;
-  --text-secondary: #999999;
-  --text-muted: #666666;
-  --text-inverse: #0d0d0d;
-  --accent: #58a6ff;
-  --accent-subtle: #0d2847;
-  --accent-hover: #79c0ff;
-  --success: #3fb950;
-  --success-subtle: #0d2b1a;
-  --warning: #d29922;
-  --warning-subtle: #2b240c;
-  --error: #f85149;
-  --error-subtle: #2b0d12;
-  --info: #58a6ff;
-  --info-subtle: #0d2847;
-  --teal: #56d4dd;
-  --teal-subtle: #0d2b2e;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.20);
+  --text-primary: #e9ecf2;
+  --text-secondary: #92a0b8;
+  --text-muted: #5e6b82;
+  --text-inverse: #0b0f19;
+  --accent: #6c8cf0;
+  --accent-subtle: #1e2b50;
+  --accent-hover: #8da4ff;
+  --accent-glow: rgba(108, 140, 240, 0.12);
+  --success: #22c55e;
+  --success-subtle: #0a2e1a;
+  --warning: #f59e0b;
+  --warning-subtle: #2d1f06;
+  --error: #ef4444;
+  --error-subtle: #2d0a0a;
+  --info: #06b6d4;
+  --info-subtle: #082f3a;
+  --teal: #14b8a6;
+  --teal-subtle: #042f2e;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.20);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.30);
+  --shadow: 0 1px 4px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.20);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,0.30), 0 8px 24px rgba(0,0,0,0.20);
 }
 
 * { border-color: var(--border); }
-html { background: var(--bg-base); -webkit-font-smoothing: antialiased; }
+html { 
+  background: var(--bg-base); 
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 body {
   min-height: 100vh;
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'SF Pro Display', system-ui, sans-serif;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
 }
 
-::selection { background: var(--accent-subtle); color: var(--accent); }
+::selection { background: var(--accent); color: var(--text-inverse); }
+
+/* Smooth focus ring */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 @layer components {
   .page-title {
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 650;
     color: var(--text-primary);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
   }
   .section-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
   }
   .focus-ring:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: -1px;
+    outline-offset: 1px;
     border-radius: var(--radius-sm);
   }
   .mono {
-    font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', monospace;
+    font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: 12px;
+    letter-spacing: 0;
   }
   .label {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 10.5px;
+    font-weight: 600;
     color: var(--text-muted);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
+  }
+  /* Page transition */
+  .page-enter {
+    animation: fadeSlideIn 0.25s cubic-bezier(0.21, 1.02, 0.58, 1);
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  /* Stat card hover lift */
+  .card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+  }
+  /* Status dot pulse */
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+  }
+  .status-dot.live {
+    background: var(--success);
+    box-shadow: 0 0 0 3px var(--success-subtle);
+  }
+  /* Gradient accent bar */
+  .accent-bar {
+    background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 70%, var(--teal)));
+    height: 3px;
+    border-radius: 0 0 var(--radius) var(--radius);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .active .accent-bar, [data-active] .accent-bar {
+    opacity: 1;
   }
 }
