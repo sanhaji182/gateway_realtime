@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Copy, DollarSign, ExternalLink, Plus, RefreshCw, Store, X } from "lucide-react";
+import { Copy, ExternalLink, Plus, Radio, RefreshCw, X } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import useSWR from "swr";
@@ -42,7 +42,7 @@ export default function AppDetailPage() {
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => { mutate(); toast.success("Data refreshed"); }}><RefreshCw className="mr-1 h-3 w-3" />Refresh</Button>
-          <Button variant="danger" size="sm" onClick={() => setDisableOpen(true)}>Stop Active</Button>
+          <Button variant="danger" size="sm" onClick={() => setDisableOpen(true)}>Deactivate</Button>
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export default function AppDetailPage() {
                 <Area type="monotone" dataKey="value" stroke="var(--accent)" fill="var(--accent-subtle)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
-          ) : <EmptyState icon={DollarSign} title="No traffic data" description="Traffic data appears after events start flowing." />}
+          ) : <EmptyState icon={RefreshCw} title="No traffic data" description="Traffic data appears after events start flowing." />}
         </section>
 
         <section className="rounded border bg-surface p-4 shadow-sm">
@@ -75,7 +75,7 @@ export default function AppDetailPage() {
             {environments.map((mp, i) => (
               <div key={mp} className="flex items-center justify-between gap-2 rounded bg-subtle px-3 py-2">
                 <div className="flex items-center gap-2">
-                  <Store className="h-3.5 w-3.5 text-muted" />
+                  <Radio className="h-3.5 w-3.5 text-muted" />
                   <span className="text-[13px] font-medium text-primary">{mp}</span>
                 </div>
                 <span className={cn("text-[13px]", i === 0 ? "text-success" : i === 1 ? "text-primary" : "text-error")}>
@@ -92,10 +92,10 @@ export default function AppDetailPage() {
           <h2 className="section-title">Recent Activity</h2>
           <Link href={`/events?app_id=${id}`} className="text-[12px] text-accent hover:underline">View all</Link>
         </div>
-        {events?.length ? <ActivityTable data={events.slice(0, 10)} /> : <EmptyState icon={Store} title="No activity" description="Scraping results appear here." />}
+        {events?.length ? <ActivityTable data={events.slice(0, 10)} /> : <EmptyState icon={Radio} title="No activity" description="Event activity appears here." />}
       </section>
 
-      <ConfirmDialog open={disableOpen} onOpenChange={setDisableOpen} title="Stop Active" description="This will deactivate the app. Existing data will be preserved." confirmLabel="Stop Active" onConfirm={() => { setDisableOpen(false); mutate({ ...app, status: "inactive" }, false); toast.success("Active paused"); }} />
+      <ConfirmDialog open={disableOpen} onOpenChange={setDisableOpen} title="Deactivate" description="This will deactivate the app. Existing data will be preserved." confirmLabel="Deactivate" onConfirm={() => { setDisableOpen(false); mutate({ ...app, status: "inactive" }, false); toast.success("Active paused"); }} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, BarChart3, DollarSign, Search, Store, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, AlertTriangle, ArrowRight, BarChart3, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import useSWR from "swr";
@@ -56,9 +56,9 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {ovLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) : ovErr ? null : overview ? (
           <>
-            <KPICard label="Active Connections" value={overview.kpi.active_connections ?? 0} color="primary" subtitle={`${overview.kpi.events_per_minute ?? 0} active channels`} icon={Store} />
-            <KPICard label="Recent Events" value={overview.recent_events?.length ?? 0} color="warning" subtitle={`${overview.recent_failures?.length ?? 0} active`} icon={TrendingDown} />
-            <KPICard label="Webhook Success" value={`98.5%`} color="success" subtitle="Last 24h" icon={TrendingUp} />
+            <KPICard label="Active Connections" value={overview.kpi.active_connections ?? 0} color="primary" subtitle={`${overview.kpi.events_per_minute ?? 0} active channels`} icon={Activity} />
+            <KPICard label="Recent Events" value={overview.recent_events?.length ?? 0} color="warning" subtitle={`${overview.recent_failures?.length ?? 0} active`} icon={Activity} />
+            <KPICard label="Webhook Success" value={`98.5%`} color="success" subtitle="Last 24h" icon={Activity} />
             <KPICard label="Events/Minute" value={overview.kpi.events_per_minute ?? 0} color="accent" subtitle="Across all channels" icon={BarChart3} />
           </>
         ) : null}
@@ -91,14 +91,14 @@ export default function OverviewPage() {
                 </div>
               ))}
             </div>
-          ) : <EmptyState icon={Store} title="No status" description="Service health checks will appear here." />}
+          ) : <EmptyState icon={Activity} title="No status" description="Service health checks will appear here." />}
         </section>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <section className="rounded border bg-surface p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="section-title">Recent Scrapes</h2>
+            <h2 className="section-title">Recent Events</h2>
             <Link href="/events" className="text-[12px] text-accent hover:underline">View all</Link>
           </div>
           {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_events?.length ? <RecentTable data={overview.recent_events.slice(0, 8)} onRowClick={setSelectedEvent} /> : <EmptyState icon={Search} title="No events" description="Events appear once publishing is active." />}
@@ -109,7 +109,7 @@ export default function OverviewPage() {
             <h2 className="section-title">Recent Events</h2>
             <Link href="/webhooks?status=failed" className="text-[12px] text-accent hover:underline">View all</Link>
           </div>
-          {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_failures?.length ? <AlertTable data={overview.recent_failures.slice(0, 8)} onRowClick={setSelectedAlert} /> : <EmptyState icon={DollarSign} title="No events" description="Recent events from all connected apps." />}
+          {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_failures?.length ? <AlertTable data={overview.recent_failures.slice(0, 8)} onRowClick={setSelectedAlert} /> : <EmptyState icon={BarChart3} title="No events" description="Recent events from all connected apps." />}
         </section>
       </div>
 
@@ -126,8 +126,8 @@ export default function OverviewPage() {
 function RecentTable({ data, onRowClick }: { data: EventItem[]; onRowClick: (e: EventItem) => void }) {
   const columns = useMemo<DataTableColumn<EventItem>[]>(() => [
     { accessorKey: "published_at", header: "Time", cell: ({ row }) => formatDateTime(row.original.published_at), meta: { mono: true } },
-    { accessorKey: "app_name", header: "Source" },
-    { accessorKey: "channel", header: "Category", meta: { mono: true } },
+    { accessorKey: "app_name", header: "App" },
+    { accessorKey: "channel", header: "Channel", meta: { mono: true } },
     { accessorKey: "event", header: "Action", meta: { mono: true } },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge variant={row.original.status === "ok" ? "success" : "error"}>{row.original.status}</StatusBadge> },
   ], []);
@@ -137,7 +137,7 @@ function RecentTable({ data, onRowClick }: { data: EventItem[]; onRowClick: (e: 
 function AlertTable({ data, onRowClick }: { data: WebhookLogItem[]; onRowClick: (w: WebhookLogItem) => void }) {
   const columns = useMemo<DataTableColumn<WebhookLogItem>[]>(() => [
     { accessorKey: "triggered_at", header: "Time", cell: ({ row }) => formatDateTime(row.original.triggered_at), meta: { mono: true } },
-    { accessorKey: "app_name", header: "Source" },
+    { accessorKey: "app_name", header: "App" },
     { accessorKey: "event", header: "Alert", meta: { mono: true } },
     { accessorKey: "http_code", header: "Code", meta: { mono: true } },
     { accessorKey: "attempt", header: "Retries", cell: ({ row }) => row.original.attempt },

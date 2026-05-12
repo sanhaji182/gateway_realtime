@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeftRight, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, ArrowLeftRight, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { Button } from "@/components/ui/Button";
@@ -44,8 +44,8 @@ export default function WebhooksPage() {
         {isLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) : (
           <>
             <KPICard label="Match Rate" value={`${metrics.successRate}%`} color="success" icon={TrendingUp} />
-            <KPICard label="Avg Latency" value={`${metrics.avgLatency}ms`} color="primary" icon={ArrowLeftRight} />
-            <KPICard label="Mismatches" value={metrics.failed} color="error" subtitle="Last 24h" icon={TrendingDown} />
+            <KPICard label="Avg Latency" value={`${metrics.avgLatency}ms`} color="primary" icon={Activity} />
+            <KPICard label="Mismatches" value={metrics.failed} color="error" subtitle="Last 24h" icon={Activity} />
             <KPICard label="Pending" value={metrics.retrying} color="warning" />
           </>
         )}
@@ -60,7 +60,7 @@ export default function WebhooksPage() {
       />
 
       <div className="mt-3">
-        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} /> : <EmptyState icon={ArrowLeftRight} title="No webhook deliveries" description="Webhook delivery logs appear when events trigger HTTP callbacks to your endpoints." />}
+        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} /> : <EmptyState icon={Activity} title="No webhook deliveries" description="Webhook delivery logs appear when events trigger HTTP callbacks to your endpoints." />}
       </div>
 
       <div className="mt-3 flex items-center justify-between">
