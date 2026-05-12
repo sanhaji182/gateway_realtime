@@ -29,8 +29,8 @@ export default function EventsPage() {
 
   const columns = useMemo<DataTableColumn<EventItem>[]>(() => [
     { accessorKey: "published_at", header: "Time", meta: { mono: true }, cell: ({ row }) => formatTimestamp(row.original.published_at) },
-    { accessorKey: "app_name", header: "Product" },
-    { accessorKey: "channel", header: "Marketplace", cell: ({ row }) => <button className="mono text-accent hover:underline" onClick={(e) => { e.stopPropagation(); setChannel(row.original.channel); setPage(1); }}>{row.original.channel}</button> },
+    { accessorKey: "app_name", header: "App" },
+    { accessorKey: "channel", header: "Channel", cell: ({ row }) => <button className="mono text-accent hover:underline" onClick={(e) => { e.stopPropagation(); setChannel(row.original.channel); setPage(1); }}>{row.original.channel}</button> },
     { accessorKey: "event", header: "Event", cell: ({ row }) => <button className="mono text-primary hover:underline" onClick={(e) => { e.stopPropagation(); setSearch(row.original.event); setPage(1); }}>{row.original.event}</button> },
     { accessorKey: "source", header: "Source" },
     { accessorKey: "size_bytes", header: "Size", cell: ({ row }) => formatBytes(row.original.size_bytes) },
@@ -42,7 +42,7 @@ export default function EventsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Events</h1>
-          <p className="mt-0.5 text-[12px] text-muted">Raw data from marketplace scrapes, price changes, and product updates.</p>
+          <p className="mt-0.5 text-[12px] text-muted">Event log — every publish, subscribe, and system event in realtime.</p>
         </div>
         <Button variant="secondary" size="sm" className="gap-1.5">
           <Sparkles className="h-3.5 w-3.5" />AI Summarize
@@ -58,7 +58,7 @@ export default function EventsPage() {
       />
 
       <div className="mt-3">
-        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} onRowClick={(e) => drawer.open(e.id)} /> : <EmptyState icon={Search} title="No data" description="Scraping results appear here when products are tracked." />}
+        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} onRowClick={(e) => drawer.open(e.id)} /> : <EmptyState icon={Search} title="No data" description="Events appear here as your backend publishes them." />}
       </div>
 
       <div className="mt-3 flex items-center justify-between">
@@ -72,8 +72,8 @@ export default function EventsPage() {
       <DetailDrawer open={drawer.isOpen} onOpenChange={(o) => !o && drawer.close()} title="Event Detail">
         {selLoading ? <SkeletonRow columns={4} /> : selErr || !selected ? <InlineError /> : (
           <div className="space-y-4">
-            <Field label="Product" value={selected.app_name} />
-            <Field label="Marketplace" value={selected.channel} />
+            <Field label="App" value={selected.app_name} />
+            <Field label="Channel" value={selected.channel} />
             <Field label="Event" value={selected.event} />
             <Field label="Status" value={selected.status} />
             <Field label="Time" value={formatFull(selected.published_at)} />
@@ -99,7 +99,7 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function Filters({ appId, onAppChange, channel, onChannelChange, status, onStatusChange, appOptions }: { appId: string; onAppChange: (v: string) => void; channel: string; onChannelChange: (v: string) => void; status: "all" | EventStatus; onStatusChange: (v: "all" | EventStatus) => void; appOptions: [string, string][] }) {
   return <>
-    <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All products</option>{appOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
+    <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All apps</option>{appOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
     <select value={status} onChange={(e) => onStatusChange(e.target.value as "all" | EventStatus)} className={status !== "all" ? "h-8 rounded border border-accent bg-surface px-2.5 text-[13px] focus:outline-none" : "h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"}><option value="all">All status</option><option value="ok">OK</option><option value="error">Error</option></select>
   </>;
 }

@@ -25,7 +25,7 @@ export default function AppDetailPage() {
   const { data: events } = useSWR<EventItem[]>(["app-events", id], () => fetch(`/api/v1/apps/${id}/events`).then(r => r.json()).then(p => p.data));
 
   if (isLoading) return <div className="space-y-4">{Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}</div>;
-  if (error || !app) return <div className="rounded border border-error bg-error-subtle px-4 py-3 text-[13px] text-error">Unable to load product.</div>;
+  if (error || !app) return <div className="rounded border border-error bg-error-subtle px-4 py-3 text-[13px] text-error">Unable to load app.</div>;
 
   const environments = ["Production", "Staging", "Development", "Testing"];
 
@@ -36,26 +36,26 @@ export default function AppDetailPage() {
           <Link href="/apps" className="text-[12px] text-muted hover:text-secondary">&larr; Apps</Link>
           <div className="mt-1 flex items-center gap-2">
             <h1 className="page-title">{app.name}</h1>
-            <StatusBadge variant={app.status === "active" ? "success" : "neutral"}>{app.status === "active" ? "Tracking" : "Paused"}</StatusBadge>
+            <StatusBadge variant={app.status === "active" ? "success" : "neutral"}>{app.status === "active" ? "Active" : "Inactive"}</StatusBadge>
           </div>
-          <p className="mt-1 text-[12px] text-muted">{app.id} · Tracked across {app.allowed_origins?.length ?? 3} sources · Updated {relativeTime(app.created_at)}</p>
+          <p className="mt-1 text-[12px] text-muted">{app.id} · Running across {app.allowed_origins?.length ?? 1} origins · Updated {relativeTime(app.created_at)}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => { mutate(); toast.success("Data refreshed"); }}><RefreshCw className="mr-1 h-3 w-3" />Refresh</Button>
-          <Button variant="danger" size="sm" onClick={() => setDisableOpen(true)}>Stop Tracking</Button>
+          <Button variant="danger" size="sm" onClick={() => setDisableOpen(true)}>Stop Active</Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <MiniKpi label="Current Price" value="Rp 12.499.000" color="primary" />
+        <MiniKpi label="Connections" value="284" color="primary" />
         <MiniKpi label="Event Rate" value="1.2k/min" color="success" subtitle="Staging" />
-        <MiniKpi label="Highest Price" value="Rp 13.299.000" color="error" subtitle="Sandbox" />
-        <MiniKpi label="Price Change" value="+2.1%" color="warning" subtitle="vs last week" />
+        <MiniKpi label="Events Today" value="12.4k" color="error" subtitle="Sandbox" />
+        <MiniKpi label="Webhook Status" value="OK" color="warning" subtitle="Last 24h" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="rounded border bg-surface p-4 shadow-sm">
-          <h2 className="section-title mb-3">Price History</h2>
+          <h2 className="section-title mb-3">Event Traffic</h2>
           {stats?.traffic?.length ? (
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={stats.traffic} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -66,11 +66,11 @@ export default function AppDetailPage() {
                 <Area type="monotone" dataKey="value" stroke="var(--accent)" fill="var(--accent-subtle)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
-          ) : <EmptyState icon={DollarSign} title="No price data" description="Price history appears after first scrape." />}
+          ) : <EmptyState icon={DollarSign} title="No traffic data" description="Traffic data appears after events start flowing." />}
         </section>
 
         <section className="rounded border bg-surface p-4 shadow-sm">
-          <h2 className="section-title mb-3">Price Comparison</h2>
+          <h2 className="section-title mb-3">Channel Breakdown</h2>
           <div className="space-y-1.5">
             {environments.map((mp, i) => (
               <div key={mp} className="flex items-center justify-between gap-2 rounded bg-subtle px-3 py-2">
@@ -95,7 +95,7 @@ export default function AppDetailPage() {
         {events?.length ? <ActivityTable data={events.slice(0, 10)} /> : <EmptyState icon={Store} title="No activity" description="Scraping results appear here." />}
       </section>
 
-      <ConfirmDialog open={disableOpen} onOpenChange={setDisableOpen} title="Stop Tracking" description="This will pause price monitoring for this product. Existing data will be preserved." confirmLabel="Stop Tracking" onConfirm={() => { setDisableOpen(false); mutate({ ...app, status: "inactive" }, false); toast.success("Tracking paused"); }} />
+      <ConfirmDialog open={disableOpen} onOpenChange={setDisableOpen} title="Stop Active" description="This will deactivate the app. Existing data will be preserved." confirmLabel="Stop Active" onConfirm={() => { setDisableOpen(false); mutate({ ...app, status: "inactive" }, false); toast.success("Active paused"); }} />
     </div>
   );
 }
@@ -113,7 +113,7 @@ function MiniKpi({ label, value, color = "primary", subtitle }: { label: string;
 function ActivityTable({ data }: { data: EventItem[] }) {
   const columns = useMemo<DataTableColumn<EventItem>[]>(() => [
     { accessorKey: "published_at", header: "Time", cell: ({ row }) => formatDateTime(row.original.published_at), meta: { mono: true } },
-    { accessorKey: "channel", header: "Marketplace", meta: { mono: true } },
+    { accessorKey: "channel", header: "Channel", meta: { mono: true } },
     { accessorKey: "event", header: "Event", meta: { mono: true } },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge variant={row.original.status === "ok" ? "success" : "error"}>{row.original.status}</StatusBadge> },
   ], []);

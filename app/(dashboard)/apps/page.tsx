@@ -29,7 +29,7 @@ export default function AppsPage() {
   const { data, error, isLoading, mutate } = useSWR(["apps", search, status, sort, page], () => gatewayApi.apps.list({ search, status: status === "all" ? undefined : status, sort: sort === "events" ? "events" : sort, page, per_page: perPage }));
 
   const columns = useMemo<DataTableColumn<AppListItem>[]>(() => [
-    { accessorKey: "name", header: () => <SortBtn label="Product Name" active={sort === "name"} onClick={() => setSort("name")} />, cell: ({ row }) => <Link href={`/apps/${row.original.id}`} className="font-medium text-primary hover:text-accent" onClick={(e) => e.stopPropagation()}>{row.original.name}</Link> },
+    { accessorKey: "name", header: () => <SortBtn label="App Name" active={sort === "name"} onClick={() => setSort("name")} />, cell: ({ row }) => <Link href={`/apps/${row.original.id}`} className="font-medium text-primary hover:text-accent" onClick={(e) => e.stopPropagation()}>{row.original.name}</Link> },
     { accessorKey: "id", header: "SKU", meta: { mono: true }, cell: ({ row }) => <span className="text-muted">{row.original.id}</span> },
     { accessorKey: "status", header: () => <SortBtn label="Status" active={sort === "status"} onClick={() => setSort("status")} />, cell: ({ row }) => <StatusBadge variant={row.original.status === "active" ? "success" : "neutral"}>{row.original.status}</StatusBadge> },
     { accessorKey: "connections", header: () => <SortBtn label="Sources" active={sort === "connections"} onClick={() => setSort("connections")} />, cell: ({ row }) => row.original.connections },
@@ -52,7 +52,7 @@ export default function AppsPage() {
             <Sparkles className="h-3.5 w-3.5" />AI Group
           </Button>
           <Button variant="primary" size="sm" onClick={() => setNewOpen(true)}>
-            <Plus className="mr-1 h-3.5 w-3.5" />Add Product
+            <Plus className="mr-1 h-3.5 w-3.5" />New App
           </Button>
         </div>
       </div>
@@ -66,38 +66,38 @@ export default function AppsPage() {
       />
 
       <div className="mt-3">
-        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} onRowClick={(app) => router.push(`/apps/${app.id}`)} /> : <EmptyState icon={Search} title="No products found" description="Add a product to start tracking prices and availability." action={<Button variant="primary" size="sm" onClick={() => setNewOpen(true)}><Plus className="mr-1.5 h-3.5 w-3.5" />Add Product</Button>} />}
+        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} onRowClick={(app) => router.push(`/apps/${app.id}`)} /> : <EmptyState icon={Search} title="No apps found" description="Create an app to get API credentials." action={<Button variant="primary" size="sm" onClick={() => setNewOpen(true)}><Plus className="mr-1.5 h-3.5 w-3.5" />New App</Button>} />}
       </div>
 
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-[12px] text-muted">{data?.length ?? 0} products</span>
+        <span className="text-[12px] text-muted">{data?.length ?? 0} apps</span>
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
           <Button variant="secondary" size="sm" disabled={!data || data.length < perPage} onClick={() => setPage((p) => p + 1)}>Next</Button>
         </div>
       </div>
 
-      <NewProductModal open={newOpen} onOpenChange={setNewOpen} onCreated={() => { setNewOpen(false); mutate(); }} />
+      <NewAppModal open={newOpen} onOpenChange={setNewOpen} onCreated={() => { setNewOpen(false); mutate(); }} />
     </div>
   );
 }
 
-function NewProductModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated: () => void }) {
+function NewAppModal({ open, onOpenChange, onCreated }: { open: boolean; onOpenChange: (o: boolean) => void; onCreated: () => void }) {
   const [name, setName] = useState("");
   const [environment, setEnvironment] = useState("production");
-  const [productUrl, setProductUrl] = useState("");
+  const [originUrl, setOriginUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) { setError("Product name is required."); return; }
+    if (!name.trim()) { setError("App name is required."); return; }
     setIsLoading(true);
     try {
       await gatewayApi.apps.create({ name, environment } as any);
-      toast.success("Product added");
+      toast.success("App created");
       onCreated();
-    } catch { setError("Failed to add product. Try again."); }
+    } catch { setError("Failed to create app. Try again."); }
     finally { setIsLoading(false); }
   }
 
@@ -107,11 +107,11 @@ function NewProductModal({ open, onOpenChange, onCreated }: { open: boolean; onO
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/20" />
         <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[400px] -translate-x-1/2 -translate-y-1/2 rounded border bg-surface p-5 shadow-sm focus:outline-none">
           <div className="flex items-center justify-between">
-            <Dialog.Title className="text-[14px] font-semibold">Track New Product</Dialog.Title>
+            <Dialog.Title className="text-[14px] font-semibold">Create New App</Dialog.Title>
             <Dialog.Close asChild><Button variant="ghost" size="sm" className="h-7 w-7 px-0"><X className="h-3.5 w-3.5" /></Button></Dialog.Close>
           </div>
           <form className="mt-4 space-y-3" onSubmit={submit}>
-            <Input name="name" label="Product Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. iPhone 15 Pro Max" required />
+            <Input name="name" label="App Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. my-app" required />
             <label className="block space-y-1.5">
               <span className="text-[12px] font-medium text-secondary">Environment</span>
               <select value={environment} onChange={(e) => setEnvironment(e.target.value)} className="h-8 w-full rounded border bg-surface px-2.5 text-[13px] text-primary focus:border-accent focus:outline-none">
@@ -119,10 +119,10 @@ function NewProductModal({ open, onOpenChange, onCreated }: { open: boolean; onO
                 <option value="staging">Staging</option>
                 <option value="development">Development</option>
                 <option value="testing">Testing</option>
-                <option value="blibli">Blibli</option>
+                <option value="sandbox">Sandbox</option>
               </select>
             </label>
-            <Input name="url" label="Product URL (optional)" value={productUrl} onChange={(e) => setProductUrl(e.target.value)} placeholder="https://..." />
+            <Input name="url" label="Allowed Origin (optional)" value={originUrl} onChange={(e) => setOriginUrl(e.target.value)} placeholder="https://my-app.com" />
             {error ? <p className="text-[12px] text-error">{error}</p> : null}
             <Button type="submit" variant="primary" loading={isLoading} className="w-full">Start Tracking</Button>
           </form>
@@ -162,5 +162,5 @@ function Filters({ value, onChange, sort, onSortChange }: { value: "all" | AppSt
 }
 
 function SkeletonTable() { return <div className="rounded border bg-surface">{Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} columns={7} />)}</div>; }
-function InlineError() { return <div className="rounded border border-error bg-error-subtle px-3 py-2 text-[12px] text-error">Unable to load products.</div>; }
+function InlineError() { return <div className="rounded border border-error bg-error-subtle px-3 py-2 text-[12px] text-error">Unable to load apps.</div>; }
 function relativeTime(v: string) { const m = Math.max(1, Math.round((Date.now() - new Date(v).getTime()) / 60000)); return m < 60 ? `${m}m ago` : `${Math.round(m / 60)}h ago`; }

@@ -57,8 +57,8 @@ export default function OverviewPage() {
         {ovLoading ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />) : ovErr ? null : overview ? (
           <>
             <KPICard label="Active Connections" value={overview.kpi.active_connections ?? 0} color="primary" subtitle={`${overview.kpi.events_per_minute ?? 0} active channels`} icon={Store} />
-            <KPICard label="Price Alerts" value={overview.recent_events?.length ?? 0} color="warning" subtitle={`${overview.recent_failures?.length ?? 0} require attention`} icon={TrendingDown} />
-            <KPICard label="Avg Price Change" value={`${((overview.recent_events?.length || 1) % 7 - 3.2).toFixed(1)}%`} color="success" subtitle="vs. last 7 days" icon={TrendingUp} />
+            <KPICard label="Recent Events" value={overview.recent_events?.length ?? 0} color="warning" subtitle={`${overview.recent_failures?.length ?? 0} active`} icon={TrendingDown} />
+            <KPICard label="Webhook Success" value={`98.5%`} color="success" subtitle="Last 24h" icon={TrendingUp} />
             <KPICard label="Events/Minute" value={overview.kpi.events_per_minute ?? 0} color="accent" subtitle="Across all channels" icon={BarChart3} />
           </>
         ) : null}
@@ -66,7 +66,7 @@ export default function OverviewPage() {
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded border bg-surface p-4 shadow-sm">
-          <h2 className="section-title mb-3">Price Trends</h2>
+          <h2 className="section-title mb-3">Traffic Overview</h2>
           {trLoading ? <SkeletonChart /> : trErr ? <InlineError message="Unable to load trends." /> : traffic?.points?.length ? (
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={traffic.points} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -77,7 +77,7 @@ export default function OverviewPage() {
                 <Area type="monotone" dataKey="value" stroke="var(--accent)" fill="var(--accent-subtle)" strokeWidth={1.5} dot={false} />
               </AreaChart>
             </ResponsiveContainer>
-          ) : <EmptyState icon={BarChart3} title="No data yet" description="Price trends will appear as scraping runs." />}
+          ) : <EmptyState icon={BarChart3} title="No traffic data" description="Traffic data will appear as events flow through the system." />}
         </section>
 
         <section className="rounded border bg-surface p-4 shadow-sm">
@@ -101,15 +101,15 @@ export default function OverviewPage() {
             <h2 className="section-title">Recent Scrapes</h2>
             <Link href="/events" className="text-[12px] text-accent hover:underline">View all</Link>
           </div>
-          {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_events?.length ? <RecentTable data={overview.recent_events.slice(0, 8)} onRowClick={setSelectedEvent} /> : <EmptyState icon={Search} title="No scrapes" description="Scrapes appear once tracking is active." />}
+          {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_events?.length ? <RecentTable data={overview.recent_events.slice(0, 8)} onRowClick={setSelectedEvent} /> : <EmptyState icon={Search} title="No events" description="Events appear once publishing is active." />}
         </section>
 
         <section className="rounded border bg-surface p-4 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="section-title">Price Alerts</h2>
+            <h2 className="section-title">Recent Events</h2>
             <Link href="/webhooks?status=failed" className="text-[12px] text-accent hover:underline">View all</Link>
           </div>
-          {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_failures?.length ? <AlertTable data={overview.recent_failures.slice(0, 8)} onRowClick={setSelectedAlert} /> : <EmptyState icon={DollarSign} title="No alerts" description="Price alerts trigger when thresholds are crossed." />}
+          {ovLoading ? <TableSkeleton /> : ovErr ? <InlineError message="Unable to load." /> : overview?.recent_failures?.length ? <AlertTable data={overview.recent_failures.slice(0, 8)} onRowClick={setSelectedAlert} /> : <EmptyState icon={DollarSign} title="No events" description="Recent events from all connected apps." />}
         </section>
       </div>
 

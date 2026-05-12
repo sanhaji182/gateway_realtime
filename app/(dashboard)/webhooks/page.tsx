@@ -37,7 +37,7 @@ export default function WebhooksPage() {
     <div className="space-y-0">
       <div>
         <h1 className="page-title">Webhooks</h1>
-        <p className="mt-0.5 text-[12px] text-muted">Track price changes across marketplaces and monitor comparison accuracy.</p>
+        <p className="mt-0.5 text-[12px] text-muted">Monitor webhook delivery — status, latency, HTTP codes, and retry failed deliveries.</p>
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -60,7 +60,7 @@ export default function WebhooksPage() {
       />
 
       <div className="mt-3">
-        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} /> : <EmptyState icon={ArrowLeftRight} title="No comparisons" description="Price comparison data appears when products are matched across marketplaces." />}
+        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} /> : <EmptyState icon={ArrowLeftRight} title="No webhook deliveries" description="Webhook delivery logs appear when events trigger HTTP callbacks to your endpoints." />}
       </div>
 
       <div className="mt-3 flex items-center justify-between">
@@ -76,7 +76,7 @@ export default function WebhooksPage() {
 
 function Filters({ appId, onAppChange, status, onStatusChange, apps }: { appId: string; onAppChange: (v: string) => void; status: string; onStatusChange: (v: "all" | WebhookLogStatus) => void; apps: [string, string][] }) {
   return <>
-    <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All products</option>{apps.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
+    <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All apps</option>{apps.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
     <select value={status} onChange={(e) => onStatusChange(e.target.value as "all" | WebhookLogStatus)} className={status !== "all" ? "h-8 rounded border border-accent bg-surface px-2.5 text-[13px] focus:outline-none" : "h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"}><option value="all">All status</option><option value="success">Matched</option><option value="failed">Mismatch</option><option value="retrying">Pending</option></select>
   </>;
 }

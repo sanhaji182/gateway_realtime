@@ -36,7 +36,7 @@ export default function ConnectionsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Apps</h1>
-          <p className="mt-0.5 text-[12px] text-muted">Active marketplace connections and scraping sessions.</p>
+          <p className="mt-0.5 text-[12px] text-muted">Active WebSocket connections and their subscribed channels.</p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded bg-success-subtle px-2 py-0.5 text-[11px] font-medium text-success">
           <span className="relative flex h-1.5 w-1.5"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" /><span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" /></span>
@@ -59,7 +59,7 @@ export default function ConnectionsPage() {
       </div>
 
       <div className="mt-4">
-        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} /> : <EmptyState icon={WifiOff} title="No active sessions" description="Connections appear when scraping starts." />}
+        {isLoading ? <SkeletonTable /> : error ? <InlineError /> : data?.length ? <DataTable columns={columns} data={data} /> : <EmptyState icon={WifiOff} title="No active sessions" description="Connections appear when clients connect via WebSocket." />}
       </div>
     </div>
   );
@@ -67,7 +67,7 @@ export default function ConnectionsPage() {
 
 function Filters({ appId, onAppChange, state, onStateChange, apps }: { appId: string; onAppChange: (v: string) => void; state: string; onStateChange: (v: "all" | ConnectionState) => void; apps: [string, string][] }) {
   return <>
-    <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All marketplaces</option>{apps.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
+    <select value={appId} onChange={(e) => onAppChange(e.target.value)} className="h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"><option value="">All apps</option>{apps.map(([id, name]) => <option key={id} value={id}>{name}</option>)}</select>
     <select value={state} onChange={(e) => onStateChange(e.target.value as "all" | ConnectionState)} className={state !== "all" ? "h-8 rounded border border-accent bg-surface px-2.5 text-[13px] focus:outline-none" : "h-8 rounded border bg-surface px-2.5 text-[13px] focus:outline-none"}><option value="all">All status</option><option value="live">Live</option><option value="idle">Idle</option></select>
   </>;
 }

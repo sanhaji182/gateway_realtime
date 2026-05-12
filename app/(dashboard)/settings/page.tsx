@@ -68,7 +68,7 @@ function SettingsContent() {
     <div className="space-y-5">
       <div>
         <h1 className="page-title">Settings</h1>
-        <p className="mt-0.5 text-[12px] text-muted">Configure scraping behavior, team access, and environment variables.</p>
+        <p className="mt-0.5 text-[12px] text-muted">Configure system settings, team access, and environment variables.</p>
       </div>
 
       <nav className="flex gap-4 border-b">
@@ -156,7 +156,7 @@ function AdminUsersTab({ users, mutate }: { users?: AdminUser[]; mutate: () => v
       <h3 className="text-[12px] font-semibold uppercase tracking-[0.05em] text-secondary">Team</h3>
       <Button variant="primary" size="sm" onClick={() => setShowInvite(true)}><Plus className="mr-1 h-3 w-3" />Invite</Button>
     </div>
-    {users?.length ? <DataTable columns={columns} data={users} /> : <EmptyState icon={Server} title="No team members" description="Invite team members to manage scraping." />}
+    {users?.length ? <DataTable columns={columns} data={users} /> : <EmptyState icon={Server} title="No team members" description="Invite team members to manage the gateway." />}
 
     <InviteModal open={showInvite} onOpenChange={setShowInvite} onInvited={mutate} />
     {confirmDelete ? (
