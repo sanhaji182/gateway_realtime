@@ -48,7 +48,7 @@ export function DocsSidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-3">
         {results ? (
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-muted">
               {results.length} result{results.length !== 1 ? 's' : ''}
             </p>
@@ -81,7 +81,7 @@ export function DocsSidebar() {
                   <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", isCollapsed && "-rotate-90")} />
                 </button>
                 {!isCollapsed && (
-                  <div className="mt-1 space-y-0.5">
+                  <div className="mt-1 space-y-1">
                     {section.pages.map((page) => (
                       <Link
                         key={page.slug}

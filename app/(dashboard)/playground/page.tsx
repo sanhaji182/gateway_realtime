@@ -188,14 +188,14 @@ export default function PlaygroundPage() {
               <input value={channelInput} onChange={(e) => setChannelInput(e.target.value)} placeholder="events" className="h-7 flex-1 rounded border bg-surface px-2 text-[12px] text-primary placeholder:text-muted focus:border-accent focus:outline-none" />
               <Button type="submit" variant="secondary" size="sm" className="h-7 px-2" disabled={!connected}>+</Button>
             </form>
-            <div className="mt-2 space-y-0.5">
+            <div className="mt-2 space-y-1">
               {[{ k: "events" }, { k: "notifications" }, { k: "presence.lobby" }, { k: "alerts" }].map((tpl) => (
                 <button key={tpl.k} className="flex items-center gap-1.5 rounded px-2 py-1.5 text-[12px] text-muted hover:bg-hover hover:text-secondary w-full text-left" onClick={() => subscribeChannel(tpl.k)}><Plus className="h-3 w-3 shrink-0" />{tpl.k}</button>
               ))}
             </div>
           </div>
           {channels.length > 0 ? (
-            <div className="border-t px-2 py-1.5 space-y-0.5">
+            <div className="border-t px-2 py-1.5 space-y-1">
               {channels.map((ch) => (
                 <div key={ch.name} className={`flex items-center justify-between gap-2 rounded px-2 py-1.5 cursor-pointer text-[12px] ${selectedChannel === ch.name ? "bg-accent-subtle text-accent" : "text-secondary hover:bg-hover"}`} onClick={() => setSelectedChannel(ch.name)}>
                   <span className="mono truncate">{ch.name}</span>
@@ -212,7 +212,7 @@ export default function PlaygroundPage() {
         {/* Event Stream */}
         <div className="rounded border bg-surface shadow-sm flex flex-col min-h-[420px]">
           <div className="flex items-center justify-between border-b px-3 py-2"><h3 className="section-title">Event Stream</h3><span className="text-[11px] text-muted">{filteredLogs.length}</span></div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-0.5 mono text-[11px]">
+          <div className="flex-1 overflow-y-auto p-3 space-y-1 mono text-[11px]">
             {filteredLogs.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-2 text-center"><Zap className="h-5 w-5 text-muted" /><span className="text-[12px] text-muted font-sans">Connect → subscribe → events appear here.</span></div>
             ) : (
