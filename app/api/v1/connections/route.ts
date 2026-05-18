@@ -2,5 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { listConnections } from "@/app/api/v1/connections/data";
 
 export async function GET(request: NextRequest) {
-  return NextResponse.json({ data: listConnections(request.nextUrl.searchParams) });
+  const result = listConnections(request.nextUrl.searchParams);
+  return NextResponse.json({ data: result.data, meta: result.meta });
 }
