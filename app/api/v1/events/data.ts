@@ -5,8 +5,8 @@ const apps = [
   { id: "app_ops", name: "backend" },
   { id: "app_chat", name: "mobile-app" }
 ];
-const channels = ["events.1", "notifications.1", "alerts", "presence.market", "orders.42"];
-const eventNames = ["event.triggered", "notification.sent", "alert.created", "member.joined", "order.updated"];
+const channels = ["events.1", "notifications.1", "alerts", "presence.lobby", "events.42"];
+const eventNames = ["event.triggered", "notification.sent", "alert.created", "member.joined", "event.update"];
 
 export const eventDetails: EventDetail[] = Array.from({ length: 86 }).map((_, index) => {
   const app = apps[index % apps.length];

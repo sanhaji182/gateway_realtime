@@ -1,11 +1,11 @@
 import type { WebhookLogDetail, WebhookLogItem, WebhookLogStatus } from "@/lib/api";
 
 const apps = [
-  { id: "app_a1b2c", name: "marketplace", endpoint: "https://api.internal/hook" },
-  { id: "app_ops", name: "ops", endpoint: "https://ops.internal/hook" },
-  { id: "app_chat", name: "chat", endpoint: "https://chat.internal/webhook" }
+  { id: "app_a1b2c", name: "web-app", endpoint: "https://api.internal/hook" },
+  { id: "app_ops", name: "backend", endpoint: "https://ops.internal/hook" },
+  { id: "app_chat", name: "mobile-app", endpoint: "https://chat.internal/webhook" }
 ];
-const events = ["order.paid", "order.updated", "alert.created", "message.sent"];
+const events = ["event.triggered", "notification.sent", "alert.created", "alert.created"];
 
 export const webhookLogs: WebhookLogDetail[] = Array.from({ length: 64 }).map((_, index) => {
   const app = apps[index % apps.length];
