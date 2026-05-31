@@ -1841,4 +1841,254 @@ mux.Handle("/ws", handler.WSHandler{
       </ul>
     </>),
   },
+  "guide-codeigniter": {
+    toc: [
+      { id: "overview", title: "Cara Kerja" },
+      { id: "install", title: "Install & Konfigurasi" },
+      { id: "publish", title: "Publish Event" },
+      { id: "ws-token", title: "Token WebSocket (JWT)" },
+      { id: "private-auth", title: "Auth Channel Private" },
+      { id: "frontend", title: "Subscribe di Browser" },
+    ],
+    render: () => (<>
+      <p>Panduan integrasi <strong>CodeIgniter 4</strong>. Backend CI4 mem-<em>publish</em> event lewat REST API Gateway, lalu browser menerimanya realtime via WebSocket. CI4 juga menerbitkan token JWT dan menandatangani akses channel private.</p>
+      <h2 id="overview">Cara Kerja</h2>
+      <ul>
+        <li><strong>Publish</strong>: CI4 mengirim event ke <code>POST /api/v1/events</code> memakai App Key + App Secret (HMAC).</li>
+        <li><strong>Token WebSocket</strong>: CI4 menerbitkan JWT (HS256, ditandatangani <code>JWT_SECRET</code>) untuk handshake browser.</li>
+        <li><strong>Channel private/presence</strong>: CI4 menandatangani izin akses memakai <code>JWT_SECRET</code>.</li>
+      </ul>
+      <Callout type="info">Dua secret berbeda: <strong>App Secret</strong> (untuk publish REST) dan <strong>JWT_SECRET</strong> (untuk token & auth channel). JWT_SECRET harus sama dengan yang dipakai gateway core.</Callout>
+      <h2 id="install">Install & Konfigurasi</h2>
+      <CodeBlock language="bash">{`
+composer require gateway/gateway-php
+      `}</CodeBlock>
+      <p>Tambahkan ke <code>.env</code> CI4:</p>
+      <CodeBlock language="ini">{`
+GW_APP_KEY = pk_test_xxx
+GW_APP_SECRET = sk_test_xxx
+GW_API_URL = https://gateway.example.com/api/v1
+JWT_SECRET = secret-64-karakter-sama-dengan-gateway
+      `}</CodeBlock>
+      <p>Daftarkan sebagai service di <code>app/Config/Services.php</code>:</p>
+      <CodeBlock language="php">{`
+public static function gateway($getShared = true)
+{
+    if ($getShared) {
+        return static::getSharedInstance('gateway');
+    }
+    return new \\Gateway\\Client(
+        getenv('GW_APP_KEY'),
+        getenv('GW_APP_SECRET'),
+        getenv('GW_API_URL')
+    );
+}
+      `}</CodeBlock>
+      <h2 id="publish">Publish Event</h2>
+      <p>Panggil dari controller mana pun setelah aksi bisnis selesai:</p>
+      <CodeBlock language="php">{`
+public function confirm($id)
+{
+    $order = $this->orders->markPaid($id);
+
+    // Kirim event realtime ke channel "orders.{id}"
+    service('gateway')->publish(
+        'orders.' . $order->id,   // channel
+        'order.paid',             // nama event
+        ['order_id' => $order->id, 'total' => $order->total]
+    );
+
+    return $this->response->setJSON(['ok' => true]);
+}
+      `}</CodeBlock>
+      <h2 id="ws-token">Token WebSocket (JWT)</h2>
+      <p>Browser butuh JWT untuk handshake. Terbitkan dari CI4 (role diambil dari user login):</p>
+      <CodeBlock language="php">{`
+// Controller: GET /socket-token (hanya untuk user yang sudah login)
+public function socketToken()
+{
+    $secret = getenv('JWT_SECRET');
+    $b64 = fn ($d) => rtrim(strtr(base64_encode(json_encode($d)), '+/', '-_'), '=');
+
+    $header  = $b64(['alg' => 'HS256', 'typ' => 'JWT']);
+    $now     = time();
+    $payload = $b64([
+        'user_id' => (string) auth()->id(), // wajib: dipakai gateway untuk routing
+        'role'    => 'user',                // 'admin' untuk izin wildcard
+        'iat'     => $now,
+        'exp'     => $now + 3600,
+    ]);
+    $sig = $b64(hash_hmac('sha256', $header . '.' . $payload, $secret, true));
+
+    return $this->response->setJSON(['token' => $header . '.' . $payload . '.' . $sig]);
+}
+      `}</CodeBlock>
+      <h2 id="private-auth">Auth Channel Private</h2>
+      <p>Untuk channel <code>private-</code>/<code>presence-</code>, browser meminta tanda tangan ke backend. CI4 memvalidasi hak akses lalu menandatangani <code>socketId:channel</code> dengan JWT_SECRET:</p>
+      <CodeBlock language="php">{`
+// Controller: POST /socket-auth  (body: socket_id, channel_name)
+public function socketAuth()
+{
+    $socketId = $this->request->getPost('socket_id');
+    $channel  = $this->request->getPost('channel_name');
+
+    // PENTING: pastikan user login berhak join $channel (cek kepemilikan di sini).
+    // contoh: if (!$this->bolehAkses($channel)) return $this->failForbidden();
+
+    $sig = hash_hmac('sha256', $socketId . ':' . $channel, getenv('JWT_SECRET'));
+
+    return $this->response->setJSON([
+        'data' => ['auth' => getenv('GW_APP_KEY') . ':' . $sig],
+    ]);
+}
+      `}</CodeBlock>
+      <p>Daftarkan route di <code>app/Config/Routes.php</code>:</p>
+      <CodeBlock language="php">{`
+$routes->get('socket-token', 'SocketController::socketToken');
+$routes->post('socket-auth', 'SocketController::socketAuth');
+      `}</CodeBlock>
+      <h2 id="frontend">Subscribe di Browser</h2>
+      <CodeBlock language="js">{`
+import { GatewayClient } from "@gateway-realtime/sdk";
+
+const { token } = await (await fetch("/socket-token")).json();
+const client = new GatewayClient({ key: "pk_test_xxx", host: "wss://gateway.example.com" });
+client.setToken(token);
+client.connect();
+
+// Channel publik
+client.subscribe("orders.99").on("order.paid", (data) => console.log(data));
+
+// Channel private — SDK memanggil /socket-auth otomatis
+client.subscribe("private-user.1", {
+  auth: () => fetch("/socket-auth", {
+    method: "POST",
+    body: new URLSearchParams({ socket_id: client.socketId, channel_name: "private-user.1" }),
+  }),
+}).on("notification.new", (data) => console.log(data));
+      `}</CodeBlock>
+      <Callout type="info">Lihat <a href="/docs/authentication">Authentication → Bring Your Own JWT</a> untuk detail klaim token.</Callout>
+    </>),
+  },
+  "guide-laravel": {
+    toc: [
+      { id: "overview", title: "Cara Kerja" },
+      { id: "install", title: "Install & Konfigurasi" },
+      { id: "publish", title: "Publish Event" },
+      { id: "ws-token", title: "Token WebSocket (JWT)" },
+      { id: "private-auth", title: "Auth Channel Private" },
+      { id: "frontend", title: "Subscribe di Browser" },
+    ],
+    render: () => (<>
+      <p>Panduan integrasi <strong>Laravel</strong>. Backend Laravel mem-<em>publish</em> event lewat REST API Gateway; browser menerimanya realtime via WebSocket. Laravel juga menerbitkan token JWT dan menandatangani akses channel private.</p>
+      <h2 id="overview">Cara Kerja</h2>
+      <ul>
+        <li><strong>Publish</strong>: Laravel mengirim event ke <code>POST /api/v1/events</code> (App Key + App Secret).</li>
+        <li><strong>Token WebSocket</strong>: Laravel menerbitkan JWT HS256 (ditandatangani <code>JWT_SECRET</code>).</li>
+        <li><strong>Channel private/presence</strong>: Laravel menandatangani izin akses dengan <code>JWT_SECRET</code>.</li>
+      </ul>
+      <Callout type="info">Dua secret berbeda: <strong>App Secret</strong> (publish REST) dan <strong>JWT_SECRET</strong> (token & auth channel). JWT_SECRET harus identik dengan gateway core.</Callout>
+      <h2 id="install">Install & Konfigurasi</h2>
+      <CodeBlock language="bash">{`
+composer require gateway/gateway-php
+      `}</CodeBlock>
+      <p>Tambahkan ke <code>.env</code> lalu buat <code>config/gateway.php</code>:</p>
+      <CodeBlock language="php">{`
+// .env
+GW_APP_KEY=pk_test_xxx
+GW_APP_SECRET=sk_test_xxx
+GW_API_URL=https://gateway.example.com/api/v1
+JWT_SECRET=secret-64-karakter-sama-dengan-gateway
+
+// config/gateway.php
+return [
+    'key'        => env('GW_APP_KEY'),
+    'secret'     => env('GW_APP_SECRET'),
+    'url'        => env('GW_API_URL', 'https://gateway.example.com/api/v1'),
+    'jwt_secret' => env('JWT_SECRET'),
+];
+      `}</CodeBlock>
+      <p>Daftarkan client sebagai singleton di <code>AppServiceProvider</code>:</p>
+      <CodeBlock language="php">{`
+// app/Providers/AppServiceProvider.php → register()
+$this->app->singleton(\\Gateway\\Client::class, fn () => new \\Gateway\\Client(
+    config('gateway.key'),
+    config('gateway.secret'),
+    config('gateway.url'),
+));
+      `}</CodeBlock>
+      <h2 id="publish">Publish Event</h2>
+      <CodeBlock language="php">{`
+public function confirm(Order $order)
+{
+    $order->markAsPaid();
+
+    app(\\Gateway\\Client::class)->publish(
+        'orders.' . $order->id,
+        'order.paid',
+        ['order_id' => $order->id, 'total' => $order->total],
+    );
+
+    return response()->json(['ok' => true]);
+}
+      `}</CodeBlock>
+      <h2 id="ws-token">Token WebSocket (JWT)</h2>
+      <p>Buat helper kecil lalu route untuk menerbitkan token bagi user login:</p>
+      <CodeBlock language="php">{`
+// app/Support/GatewayJwt.php
+function gateway_token(string $userId, string $role = 'user'): string
+{
+    $secret = config('gateway.jwt_secret');
+    $b64 = fn ($d) => rtrim(strtr(base64_encode(json_encode($d)), '+/', '-_'), '=');
+
+    $header  = $b64(['alg' => 'HS256', 'typ' => 'JWT']);
+    $now     = time();
+    $payload = $b64(['user_id' => $userId, 'role' => $role, 'iat' => $now, 'exp' => $now + 3600]);
+    $sig = $b64(hash_hmac('sha256', $header . '.' . $payload, $secret, true));
+
+    return $header . '.' . $payload . '.' . $sig;
+}
+
+// routes/web.php
+Route::middleware('auth')->get('/socket-token', fn () => response()->json([
+    'token' => gateway_token((string) auth()->id()),
+]));
+      `}</CodeBlock>
+      <h2 id="private-auth">Auth Channel Private</h2>
+      <CodeBlock language="php">{`
+// routes/web.php
+Route::middleware('auth')->post('/socket-auth', function (\\Illuminate\\Http\\Request $r) {
+    $socketId = $r->input('socket_id');
+    $channel  = $r->input('channel_name');
+
+    // PENTING: cek apakah user berhak join $channel di sini.
+    // abort_unless($user->canAccess($channel), 403);
+
+    $sig = hash_hmac('sha256', $socketId . ':' . $channel, config('gateway.jwt_secret'));
+
+    return response()->json(['data' => ['auth' => config('gateway.key') . ':' . $sig]]);
+});
+      `}</CodeBlock>
+      <h2 id="frontend">Subscribe di Browser</h2>
+      <CodeBlock language="js">{`
+import { GatewayClient } from "@gateway-realtime/sdk";
+
+const { token } = await (await fetch("/socket-token")).json();
+const client = new GatewayClient({ key: "pk_test_xxx", host: "wss://gateway.example.com" });
+client.setToken(token);
+client.connect();
+
+client.subscribe("orders.99").on("order.paid", (data) => console.log(data));
+
+client.subscribe("private-user.1", {
+  auth: () => fetch("/socket-auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ socket_id: client.socketId, channel_name: "private-user.1" }),
+  }),
+}).on("notification.new", (data) => console.log(data));
+      `}</CodeBlock>
+      <Callout type="info">Lihat <a href="/docs/authentication">Authentication → Bring Your Own JWT</a> dan <a href="/docs/php-sdk">PHP SDK</a> untuk detail lanjutan.</Callout>
+    </>),
+  },
 };

@@ -10,6 +10,13 @@ export const docsNav: DocsSection[] = [
     ],
   },
   {
+    title: "Framework Guides",
+    pages: [
+      { title: "CodeIgniter 4", slug: "guide-codeigniter" },
+      { title: "Laravel", slug: "guide-laravel" },
+    ],
+  },
+  {
     title: "Getting Started",
     pages: [
       { title: "Introduction", slug: "introduction" },
