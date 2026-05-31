@@ -2226,4 +2226,40 @@ channel.on("order.paid", (data) => render(data)); // termasuk event yang terlewa
       <Callout type="info">Resume mengandalkan history (Redis). Jumlah event yang dapat dipulihkan dibatasi oleh <code>HISTORY_MAX</code> per channel.</Callout>
     </>),
   },
+  cdn: {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "cdn", title: "Via CDN (jsDelivr)" },
+      { id: "selfhost", title: "Via Gateway (self-host)" },
+      { id: "dashboard", title: "Terlihat di Dashboard" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>Tidak perlu bundler/npm — cukup tambahkan satu tag <code>&lt;script&gt;</code>, lalu pakai langsung di browser. Cocok untuk integrasi cepat di halaman web mana pun.</p>
+      <h2 id="cdn">Via CDN (jsDelivr) — SDK lengkap</h2>
+      <p>Bundle global (IIFE) dari paket npm, berisi semua fitur (history, client events, encrypted). Mengekspos <code>window.Gateway</code>.</p>
+      <CodeBlock language="html">{`
+<script src="https://cdn.jsdelivr.net/npm/@gateway-realtime/sdk@0.4.0/dist/gateway.global.js"></script>
+<script>
+  const client = new Gateway.GatewayClient({ host: "wss://gateway.example.com" });
+  client.setToken(JWT_DARI_BACKEND_ANDA);
+  client.connect();
+  client.subscribe("orders.99").on("order.paid", (data) => console.log(data));
+</script>
+      `}</CodeBlock>
+      <h2 id="selfhost">Via Gateway (self-host)</h2>
+      <p>Gateway juga menyajikan SDK browser langsung dari servernya (tanpa CDN eksternal). Versi ini mengekspos <code>window.GatewayClient</code>:</p>
+      <CodeBlock language="html">{`
+<script src="https://gateway.example.com/sdk/gateway.js"></script>
+<script>
+  const client = new GatewayClient({ host: "wss://gateway.example.com" });
+  client.connect(JWT_DARI_BACKEND_ANDA);
+  client.subscribe("orders.99").bind("order.paid", (data) => console.log(data));
+</script>
+      `}</CodeBlock>
+      <Callout type="info">Token JWT tetap diterbitkan oleh backend Anda (lihat <a href="/docs/authentication">Bring Your Own JWT</a>). Jangan menaruh secret di halaman publik.</Callout>
+      <h2 id="dashboard">Terlihat di Dashboard</h2>
+      <p>Koneksi dan channel dari klien CDN/script tetap muncul realtime di dashboard (halaman <strong>Connections</strong> &amp; <strong>Overview</strong>) karena dashboard membaca data nyata dari endpoint <code>/stats</code> gateway.</p>
+    </>),
+  },
 };

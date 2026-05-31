@@ -6,17 +6,22 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "unpkg": "./dist/gateway.global.js",
+  "jsdelivr": "./dist/gateway.global.js",
+  "browser": "./dist/gateway.global.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./global": "./dist/gateway.global.js"
   },
   "files": ["dist"],
   "sideEffects": false,
   "keywords": ["websocket", "realtime", "pubsub", "pusher", "gateway"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && npm run build:browser",
+    "build:browser": "esbuild ../../lib/socket/browser.ts --bundle --format=iife --global-name=Gateway --platform=browser --external:crypto --minify --outfile=dist/gateway.global.js",
     "prepublishOnly": "npm run build"
   },
   "license": "MIT",
@@ -30,6 +35,7 @@
   },
   "devDependencies": {
     "@types/node": "^22",
+    "esbuild": "^0.24.0",
     "typescript": "^6.0.3"
   }
 }

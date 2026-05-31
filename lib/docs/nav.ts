@@ -42,6 +42,7 @@ export const docsNav: DocsSection[] = [
       { title: "React Hooks", slug: "react-hooks" },
       { title: "PHP SDK", slug: "php-sdk" },
       { title: "Browser GatewayClient", slug: "browser-sdk" },
+      { title: "Browser / CDN", slug: "cdn" },
     ],
   },
   {
