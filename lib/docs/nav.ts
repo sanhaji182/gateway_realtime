@@ -57,6 +57,8 @@ export const docsNav: DocsSection[] = [
     title: "Advanced",
     pages: [
       { title: "Security Model", slug: "security" },
+      { title: "Encrypted Channels", slug: "encrypted-channels" },
+      { title: "Pusher Compatibility", slug: "pusher-compat" },
       { title: "SaaS Extensions", slug: "saas-extensions" },
       { title: "Changelog", slug: "changelog" },
     ],

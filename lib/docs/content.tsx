@@ -2091,4 +2091,73 @@ client.subscribe("private-user.1", {
       <Callout type="info">Lihat <a href="/docs/authentication">Authentication → Bring Your Own JWT</a> dan <a href="/docs/php-sdk">PHP SDK</a> untuk detail lanjutan.</Callout>
     </>),
   },
+  "pusher-compat": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "connect", title: "Hubungkan pusher-js" },
+      { id: "supported", title: "Yang Didukung" },
+      { id: "limits", title: "Batasan (Subset)" },
+    ],
+    render: () => (<>
+      <p>Gateway menyediakan endpoint kompatibel protokol Pusher di <code>/app/&#123;key&#125;</code>, sehingga klien <code>pusher-js</code> resmi dapat terhubung tanpa banyak perubahan.</p>
+      <h2 id="connect">Hubungkan pusher-js</h2>
+      <CodeBlock language="js">{`
+import Pusher from "pusher-js";
+
+const pusher = new Pusher("any-key", {
+  wsHost: "gateway.example.com",
+  wsPort: 443,
+  forceTLS: true,
+  disableStats: true,
+  enabledTransports: ["ws", "wss"],
+});
+
+pusher.subscribe("orders").bind("order.paid", (data) => console.log(data));
+      `}</CodeBlock>
+      <p>Klien akan terhubung ke <code>/app/any-key</code>, menerima <code>pusher:connection_established</code>, lalu subscribe seperti biasa.</p>
+      <h2 id="supported">Yang Didukung</h2>
+      <ul>
+        <li>Handshake <code>pusher:connection_established</code> (berisi <code>socket_id</code>).</li>
+        <li><code>pusher:subscribe</code> / <code>pusher:unsubscribe</code> + <code>pusher_internal:subscription_succeeded</code>.</li>
+        <li><code>pusher:ping</code> → <code>pusher:pong</code>.</li>
+        <li>Event channel dengan <code>data</code> sebagai string JSON (sesuai spesifikasi Pusher).</li>
+      </ul>
+      <h2 id="limits">Batasan (Subset)</h2>
+      <Callout type="warning">Channel publik berfungsi penuh. Untuk channel <code>private-</code>/<code>presence-</code>, tanda tangan auth memakai <code>JWT_SECRET</code> gateway (bukan app-secret Pusher), sehingga signer harus memakai <code>JWT_SECRET</code>. Fitur statistik Pusher dinonaktifkan (<code>disableStats: true</code>).</Callout>
+    </>),
+  },
+  "encrypted-channels": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "subscribe", title: "Subscribe & Auto-Dekripsi" },
+      { id: "publish", title: "Publish Terenkripsi" },
+      { id: "notes", title: "Catatan Keamanan" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>Channel berawalan <code>private-encrypted-</code> mengenkripsi payload end-to-end dengan AES-256-GCM. Kunci diturunkan (HKDF) dari sebuah <strong>shared secret</strong> + nama channel, sehingga setiap channel punya kunci unik dan server pub/sub tidak pernah melihat plaintext.</p>
+      <h2 id="subscribe">Subscribe & Auto-Dekripsi</h2>
+      <p>Berikan <code>encryptionKey</code> (shared secret) saat subscribe; SDK otomatis mendekripsi payload sebelum diserahkan ke handler:</p>
+      <CodeBlock language="js">{`
+client.subscribe("private-encrypted-room.1", {
+  encryptionKey: SHARED_SECRET,
+  auth: () => fetch("/socket-auth", {
+    method: "POST",
+    body: JSON.stringify({ socket_id: client.socketId, channel_name: "private-encrypted-room.1" }),
+  }),
+}).on("message.new", (data) => console.log(data)); // sudah terdekripsi
+      `}</CodeBlock>
+      <h2 id="publish">Publish Terenkripsi</h2>
+      <p>Backend mengenkripsi payload memakai kunci turunan yang sama, lalu publish objek <code>&#123; ciphertext, iv &#125;</code>:</p>
+      <CodeBlock language="js">{`
+import { generateSharedSecret, encryptPayload } from "@gateway-realtime/sdk";
+
+const key = await generateSharedSecret("private-encrypted-room.1", SHARED_SECRET);
+const payload = await encryptPayload(key, JSON.stringify({ text: "halo" }));
+// publish payload ({ ciphertext, iv }) ke POST /api/v1/events sebagai data event
+      `}</CodeBlock>
+      <h2 id="notes">Catatan Keamanan</h2>
+      <Callout type="warning">Distribusikan <code>SHARED_SECRET</code> hanya ke pihak yang berhak (mis. lewat endpoint auth Anda setelah otorisasi). Jangan menaruhnya di kode frontend publik. Kunci berbeda per channel, jadi kebocoran satu channel tidak membuka channel lain.</Callout>
+    </>),
+  },
 };
