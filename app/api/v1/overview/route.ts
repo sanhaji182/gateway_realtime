@@ -1,28 +1,40 @@
 import { NextResponse } from "next/server";
+import { fetchGatewayStats } from "@/lib/gateway";
+import type { Overview } from "@/lib/api";
+
+// Baseline demo. KPI active_connections dan baris health "Gateway" ditimpa dengan
+// data live dari Go core saat terjangkau; sisanya tetap data contoh sampai
+// events/webhooks disambungkan ke store nyata.
+const base: Overview = {
+  kpi: { active_connections: 0, events_per_minute: 342, webhook_success_rate: 99.1, error_rate: 0.3 },
+  health: [
+    { name: "Gateway", status: "operational", detail: "0 errors in last 1h" },
+    { name: "Broker (Redis)", status: "operational", detail: "latency 1ms" },
+    { name: "Webhook Worker", status: "degraded", detail: "3 retries pending" }
+  ],
+  recent_events: [
+    { id: "evt_001", app_id: "app_a1b2c", app_name: "web-app", channel: "events.1", event: "event.triggered", source: "ci4-api", size_bytes: 312, status: "ok", request_id: "req_aa1", published_at: "2026-05-05T14:22:01.842Z" },
+    { id: "evt_002", app_id: "app_a1b2c", app_name: "web-app", channel: "notifications.1", event: "notification.sent", source: "web", size_bytes: 540, status: "ok", request_id: "req_aa2", published_at: "2026-05-05T14:21:34.402Z" },
+    { id: "evt_003", app_id: "app_ops", app_name: "backend", channel: "alerts", event: "alert.created", source: "worker", size_bytes: 188, status: "error", request_id: "req_aa3", published_at: "2026-05-05T14:20:42.100Z" }
+  ],
+  recent_failures: [
+    { id: "whl_551", app_id: "app_a1b2c", app_name: "web-app", endpoint_url: "https://api.internal/hook", event: "event.triggered", status: "failed", http_code: 500, latency_ms: 142, attempt: 3, triggered_at: "2026-05-05T14:22:01.812Z" },
+    { id: "whl_552", app_id: "app_ops", app_name: "backend", endpoint_url: "https://ops.internal/hook", event: "alert.created", status: "retrying", http_code: 503, latency_ms: 361, attempt: 2, triggered_at: "2026-05-05T14:18:11.120Z" }
+  ]
+};
 
 export async function GET() {
-  return NextResponse.json({
-    data: {
-      kpi: {
-        active_connections: 1284,
-        events_per_minute: 342,
-        webhook_success_rate: 99.1,
-        error_rate: 0.3
-      },
-      health: [
-        { name: "Gateway", status: "operational", detail: "0 errors in last 1h" },
-        { name: "Broker (Redis)", status: "operational", detail: "latency 1ms" },
-        { name: "Webhook Worker", status: "degraded", detail: "3 retries pending" }
-      ],
-      recent_events: [
-        { id: "evt_001", app_id: "app_a1b2c", app_name: "web-app", channel: "events.1", event: "event.triggered", source: "ci4-api", size_bytes: 312, status: "ok", request_id: "req_aa1", published_at: "2026-05-05T14:22:01.842Z" },
-        { id: "evt_002", app_id: "app_a1b2c", app_name: "web-app", channel: "notifications.1", event: "notification.sent", source: "web", size_bytes: 540, status: "ok", request_id: "req_aa2", published_at: "2026-05-05T14:21:34.402Z" },
-        { id: "evt_003", app_id: "app_ops", app_name: "backend", channel: "alerts", event: "alert.created", source: "worker", size_bytes: 188, status: "error", request_id: "req_aa3", published_at: "2026-05-05T14:20:42.100Z" }
-      ],
-      recent_failures: [
-        { id: "whl_551", app_id: "app_a1b2c", app_name: "web-app", endpoint_url: "https://api.internal/hook", event: "event.triggered", status: "failed", http_code: 500, latency_ms: 142, attempt: 3, triggered_at: "2026-05-05T14:22:01.812Z" },
-        { id: "whl_552", app_id: "app_ops", app_name: "backend", endpoint_url: "https://ops.internal/hook", event: "alert.created", status: "retrying", http_code: 503, latency_ms: 361, attempt: 2, triggered_at: "2026-05-05T14:18:11.120Z" }
-      ]
-    }
-  });
+  const stats = await fetchGatewayStats();
+  if (!stats) {
+    return NextResponse.json({ data: base });
+  }
+  const data: Overview = {
+    ...base,
+    kpi: { ...base.kpi, active_connections: stats.total_connections },
+    health: [
+      { name: "Gateway", status: "operational", detail: `${stats.total_channels} channels · up ${stats.uptime_seconds}s` },
+      ...base.health.slice(1)
+    ]
+  };
+  return NextResponse.json({ data });
 }
