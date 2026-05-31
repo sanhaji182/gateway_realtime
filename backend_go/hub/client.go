@@ -24,6 +24,7 @@ type Client struct {
 	Role     string          // Role user dari JWT, dipakai untuk membatasi wildcard/admin channel.
 	SocketID string          // Identitas unik per koneksi, dipakai pada signature private/presence channel.
 	Channels map[string]bool // Daftar channel yang diikuti socket ini untuk cleanup saat disconnect.
+	ConnectedAt time.Time     // Waktu koneksi diterima, dipakai untuk observability/stats.
 	Log      zerolog.Logger  // Logger terstruktur yang aman dipakai lintas goroutine.
 }
 
@@ -31,7 +32,7 @@ type Client struct {
 // Fungsi ini belum mendaftarkan client ke Hub; caller tetap harus memanggil Register secara eksplisit.
 func NewClient(h *Hub, conn *websocket.Conn, userID, role, socketID string, log zerolog.Logger) *Client {
 	// Buffer 256 memberi ruang burst event pendek tanpa langsung memblokir publisher.
-	return &Client{Hub: h, Conn: conn, Send: make(chan []byte, 256), UserID: userID, Role: role, SocketID: socketID, Channels: map[string]bool{}, Log: log}
+	return &Client{Hub: h, Conn: conn, Send: make(chan []byte, 256), UserID: userID, Role: role, SocketID: socketID, Channels: map[string]bool{}, ConnectedAt: time.Now(), Log: log}
 }
 
 // ReadPump menjalankan loop baca untuk satu koneksi WebSocket.

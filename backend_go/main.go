@@ -60,9 +60,11 @@ func main() {
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
 		logger.Error().Err(err).Msg("redis ping failed")
 	}
-	// Rate limiter: 10 req/s per IP, burst 20
-	ipLimiter := ratelimit.NewIPLimiter(10, 20)
+	// Rate limiter per IP (configurable via RATE_LIMIT_RPS / RATE_LIMIT_BURST).
+	ipLimiter := ratelimit.NewIPLimiter(cfg.RateLimitRPS, cfg.RateLimitBurst)
 	h := hub.New(logger)
+	// Aktifkan presence & broadcast lintas-node lewat Redis (shared state + pub/sub).
+	h.SetBroadcaster(redisSub.Presence{Client: redisClient})
 	ctx, cancel := context.WithCancel(context.Background())
 	go (redisSub.Subscriber{Client: redisClient, Hub: h, Log: logger}).Run(ctx)
 	mux := http.NewServeMux()
@@ -71,13 +73,18 @@ func main() {
 		EventHook: Ext.EventHook, RateLimiter: Ext.RateLimiter, Auth: Ext.Auth,
 	})
 	mux.Handle("/health", handler.HealthHandler{Hub: h, Redis: redisClient})
+	mux.Handle("/stats", handler.StatsHandler{Config: cfg, Hub: h})
 	mux.Handle("/api/socket/auth", handler.AuthHandler{
 		Config: cfg, Hub: h, Log: logger,
 		EventHook: Ext.EventHook, RateLimiter: Ext.RateLimiter, Auth: Ext.Auth,
 	})
 	mux.HandleFunc("/sdk/gateway.js", sdkHandler)
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "gateway_connections %d\n", h.Connections())
+		s := h.Snapshot()
+		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
+		fmt.Fprintf(w, "# HELP gateway_connections Active WebSocket connections\n# TYPE gateway_connections gauge\ngateway_connections %d\n", s.TotalConnections)
+		fmt.Fprintf(w, "# HELP gateway_channels Active channels\n# TYPE gateway_channels gauge\ngateway_channels %d\n", s.TotalChannels)
+		fmt.Fprintf(w, "# HELP gateway_uptime_seconds Seconds since gateway start\n# TYPE gateway_uptime_seconds counter\ngateway_uptime_seconds %d\n", s.UptimeSeconds)
 	})
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,

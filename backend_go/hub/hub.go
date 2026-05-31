@@ -20,7 +20,22 @@ type Hub struct {
 	presence  map[string]map[string]PresenceMember // Map presence channel -> socketId -> member aktif.
 	startedAt time.Time                            // Waktu service mulai untuk menghitung uptime health check.
 	log       zerolog.Logger                       // Logger Hub untuk error internal dan observability.
+	broadcaster Broadcaster                          // Opsional: distribusi presence & system event lintas-node. Nil = single-node.
 }
+
+// Broadcaster mendistribusikan state presence dan system event lintas node (mis. via Redis).
+// Jika nil, Hub berjalan single-node dengan presence in-memory saja.
+type Broadcaster interface {
+	// JoinPresence menyimpan member ke shared state dan mengembalikan seluruh daftar member.
+	JoinPresence(channel, socketID string, member PresenceMember) []PresenceMember
+	// LeavePresence menghapus member dari shared state, mengembalikannya jika ada.
+	LeavePresence(channel, socketID string) (PresenceMember, bool)
+	// PublishSystem mendistribusikan system event agar setiap node mem-fanout lokal.
+	PublishSystem(channel string, payload []byte)
+}
+
+// SetBroadcaster mengaktifkan mode lintas-node. Dipanggil sekali saat startup sebelum melayani.
+func (h *Hub) SetBroadcaster(b Broadcaster) { h.broadcaster = b }
 
 // PresenceMember merepresentasikan satu member aktif di presence channel.
 // State ini dimiliki Hub dan dibersihkan saat socket leave atau disconnect.
@@ -91,13 +106,12 @@ func (h *Hub) SendToUser(userID string, payload []byte) {
 }
 
 // SendToChannel mengirim payload ke semua subscriber channel tertentu.
-// Wildcard dievaluasi saat read lock masih aktif agar view map channels konsisten.
+// Selain subscriber langsung, payload juga dikirim ke subscriber pola wildcard
+// (mis. "orders.*") yang prefix-nya cocok dengan channel ini.
 func (h *Hub) SendToChannel(channel string, payload []byte) {
 	h.mu.RLock() // RLock cukup karena fan-out hanya membaca daftar subscriber.
 	clients := snapshot(h.channels[channel])
-	if strings.Contains(channel, "*") {
-		clients = append(clients, h.matchWildcardLocked(channel)...)
-	}
+	clients = append(clients, h.matchWildcardLocked(channel)...)
 	h.mu.RUnlock()
 	// Enqueue dilakukan setelah unlock agar operasi channel client tidak memblokir map Hub.
 	for _, c := range clients {
@@ -128,18 +142,26 @@ func (h *Hub) JoinChannel(c *Client, channel string, member *PresenceMember) {
 	}
 	h.channels[channel][c.SocketID] = c
 	c.Channels[channel] = true
+	isPresence := strings.HasPrefix(channel, "presence-") && member != nil
 	var members []PresenceMember
-	if strings.HasPrefix(channel, "presence-") && member != nil {
-		if h.presence[channel] == nil {
-			h.presence[channel] = map[string]PresenceMember{}
-		}
+	if isPresence {
 		member.SocketID = c.SocketID
-		h.presence[channel][c.SocketID] = *member
-		members = presenceSnapshot(h.presence[channel])
+		if h.broadcaster == nil {
+			// Single-node: simpan member di memory.
+			if h.presence[channel] == nil {
+				h.presence[channel] = map[string]PresenceMember{}
+			}
+			h.presence[channel][c.SocketID] = *member
+			members = presenceSnapshot(h.presence[channel])
+		}
 	}
 	h.mu.Unlock()
 	// Event dikirim setelah unlock agar write ke channel client tidak terjadi saat mutex Hub dipegang.
-	if strings.HasPrefix(channel, "presence-") && member != nil {
+	if isPresence {
+		if h.broadcaster != nil {
+			// Lintas-node: simpan ke shared state dan ambil daftar member dari semua node.
+			members = h.broadcaster.JoinPresence(channel, c.SocketID, *member)
+		}
 		h.sendSystem(c, channel, "subscription_succeeded", map[string]any{"members": members, "count": len(members)})
 		h.broadcastSystem(channel, "member_added", member)
 		return
@@ -159,16 +181,24 @@ func (h *Hub) LeaveChannel(c *Client, channel string) {
 		}
 	}
 	delete(c.Channels, channel)
-	if members := h.presence[channel]; members != nil {
-		if member, ok := members[c.SocketID]; ok {
-			removed = &member
-			delete(members, c.SocketID)
-			if len(members) == 0 {
-				delete(h.presence, channel)
+	if h.broadcaster == nil {
+		if members := h.presence[channel]; members != nil {
+			if member, ok := members[c.SocketID]; ok {
+				removed = &member
+				delete(members, c.SocketID)
+				if len(members) == 0 {
+					delete(h.presence, channel)
+				}
 			}
 		}
 	}
 	h.mu.Unlock()
+	// Lintas-node: hapus dari shared state setelah unlock.
+	if h.broadcaster != nil && strings.HasPrefix(channel, "presence-") {
+		if m, ok := h.broadcaster.LeavePresence(channel, c.SocketID); ok {
+			removed = &m
+		}
+	}
 	// Broadcast leave setelah unlock untuk menghindari deadlock saat SendToChannel mengambil RLock.
 	if removed != nil {
 		h.broadcastSystem(channel, "member_removed", removed)
@@ -204,13 +234,73 @@ func (h *Hub) Connections() int {
 // Tidak perlu lock karena startedAt immutable setelah inisialisasi.
 func (h *Hub) Uptime() time.Duration { return time.Since(h.startedAt) }
 
-// matchWildcardLocked mencari subscriber wildcard yang cocok dengan channel.
+// ConnectionInfo merepresentasikan satu koneksi aktif untuk endpoint observability.
+type ConnectionInfo struct {
+	SocketID    string   `json:"socket_id"`
+	UserID      string   `json:"user_id"`
+	Role        string   `json:"role"`
+	Channels    []string `json:"channels"`
+	ConnectedAt int64    `json:"connected_at"` // unix milliseconds
+}
+
+// ChannelInfo merepresentasikan satu channel aktif beserta jumlah subscriber.
+type ChannelInfo struct {
+	Name        string `json:"name"`
+	Subscribers int    `json:"subscribers"`
+	Presence    bool   `json:"presence"`
+}
+
+// Stats adalah snapshot read-only state Hub untuk endpoint /stats dan /metrics.
+type Stats struct {
+	Connections      []ConnectionInfo `json:"connections"`
+	Channels         []ChannelInfo    `json:"channels"`
+	TotalConnections int              `json:"total_connections"`
+	TotalChannels    int              `json:"total_channels"`
+	UptimeSeconds    int64            `json:"uptime_seconds"`
+}
+
+// Snapshot mengambil potret konsisten koneksi dan channel di bawah satu RLock.
+// Dipakai oleh handler /stats (dashboard data nyata) dan /metrics (Prometheus).
+func (h *Hub) Snapshot() Stats {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	conns := make([]ConnectionInfo, 0)
+	for _, group := range h.users {
+		for _, c := range group {
+			channels := make([]string, 0, len(c.Channels))
+			for ch := range c.Channels {
+				channels = append(channels, ch)
+			}
+			conns = append(conns, ConnectionInfo{
+				SocketID: c.SocketID, UserID: c.UserID, Role: c.Role,
+				Channels: channels, ConnectedAt: c.ConnectedAt.UnixMilli(),
+			})
+		}
+	}
+	channels := make([]ChannelInfo, 0, len(h.channels))
+	for name, group := range h.channels {
+		channels = append(channels, ChannelInfo{
+			Name: name, Subscribers: len(group), Presence: strings.HasPrefix(name, "presence-"),
+		})
+	}
+	return Stats{
+		Connections: conns, Channels: channels,
+		TotalConnections: len(conns), TotalChannels: len(channels),
+		UptimeSeconds: int64(time.Since(h.startedAt).Seconds()),
+	}
+}
+
+// matchWildcardLocked mencari subscriber channel wildcard (mis. "orders.*")
+// yang prefix-nya cocok dengan channel concrete yang sedang dipublish.
 // Caller wajib sudah memegang RLock/Lock karena fungsi ini membaca h.channels tanpa lock sendiri.
 func (h *Hub) matchWildcardLocked(channel string) []*Client {
 	var clients []*Client
-	prefix := strings.TrimSuffix(channel, "*")
 	for subscribed, group := range h.channels {
-		if strings.HasSuffix(subscribed, "*") && strings.HasPrefix(channel, strings.TrimSuffix(subscribed, "*")) || strings.HasPrefix(subscribed, prefix) {
+		if subscribed == channel || !strings.HasSuffix(subscribed, "*") {
+			continue // bukan pola wildcard, atau sudah ditangani sebagai subscriber langsung.
+		}
+		prefix := strings.TrimSuffix(subscribed, "*")
+		if strings.HasPrefix(channel, prefix) {
 			clients = append(clients, snapshot(group)...)
 		}
 	}
@@ -225,9 +315,14 @@ func (h *Hub) sendSystem(c *Client, channel, event string, data any) {
 }
 
 // broadcastSystem mengirim system event ke semua subscriber channel.
-// Fungsi ini sengaja melewati SendToChannel agar locking dan backpressure tetap konsisten.
+// Jika broadcaster aktif, event dipublish lintas-node (setiap node mem-fanout lokal
+// lewat Redis subscriber) agar presence konsisten antar node; jika tidak, fanout lokal.
 func (h *Hub) broadcastSystem(channel, event string, data any) {
 	payload, _ := json.Marshal(EventEnvelope{Type: "system", Channel: channel, Event: event, Data: data, TS: time.Now().UnixMilli()})
+	if h.broadcaster != nil {
+		h.broadcaster.PublishSystem(channel, payload)
+		return
+	}
 	h.SendToChannel(channel, payload)
 }
 

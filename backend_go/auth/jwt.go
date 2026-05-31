@@ -32,6 +32,17 @@ func ValidateToken(token, secret string) (Claims, error) {
 		// JWT harus memiliki header, payload, dan signature; format lain tidak diproses lebih lanjut.
 		return Claims{}, errors.New("invalid jwt format")
 	}
+	// Pin algoritma ke HS256 — cegah alg-confusion (mis. "none" atau pergantian ke RS256).
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return Claims{}, errors.New("invalid jwt header")
+	}
+	var header struct {
+		Alg string `json:"alg"`
+	}
+	if err := json.Unmarshal(headerBytes, &header); err != nil || header.Alg != "HS256" {
+		return Claims{}, errors.New("unexpected jwt alg")
+	}
 	signingInput := parts[0] + "." + parts[1]
 	mac := hmac.New(sha256.New, []byte(secret))
 	_, _ = mac.Write([]byte(signingInput))

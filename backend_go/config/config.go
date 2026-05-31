@@ -18,6 +18,8 @@ type Config struct {
 	AllowedOrigins []string      // Daftar origin yang boleh mengakses HTTP/WebSocket gateway.
 	PingInterval   time.Duration // Interval heartbeat ping; cleanup terjadi saat pong tidak diterima 2x interval.
 	LogLevel       string        // Level logging zerolog yang diparse saat startup.
+	RateLimitRPS   float64       // Token per detik per IP untuk HTTP rate limiter (default 10).
+	RateLimitBurst float64       // Kapasitas burst token bucket per IP (default 20).
 }
 
 // Load membaca semua environment variable dan menerapkan default lokal.
@@ -31,6 +33,8 @@ func Load() Config {
 		AllowedOrigins: splitOrigins(getenv("ALLOWED_ORIGINS", "*")),
 		PingInterval:   time.Duration(pingSeconds) * time.Second,
 		LogLevel:       getenv("LOG_LEVEL", "info"),
+		RateLimitRPS:   float64(getenvInt("RATE_LIMIT_RPS", 10)),
+		RateLimitBurst: float64(getenvInt("RATE_LIMIT_BURST", 20)),
 	}
 }
 
