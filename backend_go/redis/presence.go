@@ -3,11 +3,17 @@ package redis
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"go-gateway/hub"
 
 	goredis "github.com/redis/go-redis/v9"
 )
+
+// presenceTTL membatasi umur hash presence agar sisa (orphan) dari node yang
+// crash mendadak otomatis terbersihkan. Node yang masih punya subscriber di
+// channel akan me-refresh TTL secara periodik (lihat RefreshPresence).
+const presenceTTL = 90 * time.Second
 
 // Presence mengimplementasikan hub.Broadcaster memakai Redis sebagai shared state.
 //
@@ -29,6 +35,7 @@ func (p Presence) JoinPresence(channel, socketID string, member hub.PresenceMemb
 	ctx := context.Background()
 	if b, err := json.Marshal(member); err == nil {
 		p.Client.HSet(ctx, presenceKey(channel), socketID, b)
+		p.Client.Expire(ctx, presenceKey(channel), presenceTTL) // perpanjang umur saat ada aktivitas
 	}
 	all, err := p.Client.HGetAll(ctx, presenceKey(channel)).Result()
 	members := make([]hub.PresenceMember, 0, len(all))
@@ -62,4 +69,14 @@ func (p Presence) LeavePresence(channel, socketID string) (hub.PresenceMember, b
 // PublishSystem mendistribusikan system event ke semua node lewat channel events.<channel>.
 func (p Presence) PublishSystem(channel string, payload []byte) {
 	p.Client.Publish(context.Background(), "events."+channel, payload)
+}
+
+// RefreshPresence memperpanjang TTL hash presence untuk channel yang masih punya
+// subscriber di node ini. Dipanggil periodik dari main agar presence aktif tidak
+// expired, sementara sisa dari node yang crash akan kedaluwarsa sendiri.
+func (p Presence) RefreshPresence(channels []string) {
+	ctx := context.Background()
+	for _, ch := range channels {
+		p.Client.Expire(ctx, presenceKey(ch), presenceTTL)
+	}
 }

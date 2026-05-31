@@ -64,9 +64,32 @@ func main() {
 	ipLimiter := ratelimit.NewIPLimiter(cfg.RateLimitRPS, cfg.RateLimitBurst)
 	h := hub.New(logger)
 	// Aktifkan presence & broadcast lintas-node lewat Redis (shared state + pub/sub).
-	h.SetBroadcaster(redisSub.Presence{Client: redisClient})
+	presence := redisSub.Presence{Client: redisClient}
+	h.SetBroadcaster(presence)
 	ctx, cancel := context.WithCancel(context.Background())
 	go (redisSub.Subscriber{Client: redisClient, Hub: h, Log: logger}).Run(ctx)
+	// Refresh TTL presence tiap 30 detik untuk channel yang masih aktif di node ini,
+	// agar sisa presence dari node yang crash otomatis kedaluwarsa (anti-orphan).
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				var channels []string
+				for _, c := range h.Snapshot().Channels {
+					if c.Presence && c.Subscribers > 0 {
+						channels = append(channels, c.Name)
+					}
+				}
+				if len(channels) > 0 {
+					presence.RefreshPresence(channels)
+				}
+			}
+		}
+	}()
 	mux := http.NewServeMux()
 	mux.Handle("/ws", handler.WSHandler{
 		Config: cfg, Hub: h, Log: logger,
