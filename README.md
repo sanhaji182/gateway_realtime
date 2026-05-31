@@ -231,6 +231,16 @@ PORT=4000
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=<random-64-char>
 ALLOWED_ORIGINS=https://dashboard.internal,https://app.internal
+RATE_LIMIT_RPS=10            # opsional: token/detik per IP
+RATE_LIMIT_BURST=20          # opsional: kapasitas burst per IP
+
+# Dashboard (opsional — untuk data nyata & auth produksi)
+GATEWAY_INTERNAL_URL=http://localhost:4000          # core untuk statistik /stats
+GATEWAY_ADMIN_EMAIL=admin@example.com               # kredensial admin (override demo)
+GATEWAY_ADMIN_PASSWORD=<password-kuat>              # jika diset, akun demo viewer dimatikan
+GATEWAY_APP_SECRETS=app1:pk_test_x:sk_test_x        # app untuk publish REST (appId:key:secret,...)
+GATEWAY_WEBHOOKS=[{"url":"https://you/hook","events":["*"],"secret":"whsec_x"}]
+HISTORY_MAX=50               # jumlah pesan history per channel
 ```
 
 ### 3. Run with PM2

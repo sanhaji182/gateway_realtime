@@ -4,10 +4,22 @@ import type { AuthUser } from "@/lib/api/types";
 
 export const SESSION_COOKIE = "gateway_session";
 
-const demoUsers: Array<Required<AuthUser> & { password: string }> = [
-  { id: "usr_admin", email: "admin@gateway.local", password: "password", name: "Admin", role: "admin" },
-  { id: "usr_viewer", email: "viewer@gateway.local", password: "password", name: "Viewer", role: "viewer" }
-];
+// Daftar user dibangun dari env agar produksi bisa set kredensial admin sendiri:
+//   GATEWAY_ADMIN_EMAIL, GATEWAY_ADMIN_PASSWORD
+// Jika GATEWAY_ADMIN_PASSWORD tidak diset, aktif "mode demo": pakai admin & viewer default.
+function buildUsers(): Array<Required<AuthUser> & { password: string }> {
+  const adminEmail = (process.env.GATEWAY_ADMIN_EMAIL || "admin@gateway.local").toLowerCase();
+  const adminPassword = process.env.GATEWAY_ADMIN_PASSWORD || "password";
+  const users: Array<Required<AuthUser> & { password: string }> = [
+    { id: "usr_admin", email: adminEmail, password: adminPassword, name: "Admin", role: "admin" },
+  ];
+  // Akun viewer demo HANYA aktif bila kredensial admin tidak diset via env,
+  // supaya deployment produksi tidak menyertakan kredensial hardcoded.
+  if (!process.env.GATEWAY_ADMIN_PASSWORD) {
+    users.push({ id: "usr_viewer", email: "viewer@gateway.local", password: "password", name: "Viewer", role: "viewer" });
+  }
+  return users;
+}
 
 const SECRET = process.env.JWT_SECRET || "change-me-in-production-64-chars-min";
 
@@ -16,7 +28,7 @@ export function canEdit(user?: Pick<AuthUser, "role"> | null) {
 }
 
 export function authenticate(email: string, password: string) {
-  return demoUsers.find((user) => user.email === email && user.password === password) ?? null;
+  return buildUsers().find((user) => user.email === email && user.password === password) ?? null;
 }
 
 // Signed session token: header.payload.signature (HMAC-SHA256)
