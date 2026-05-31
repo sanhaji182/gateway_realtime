@@ -1,0 +1,39 @@
+{
+  "name": "@gateway-realtime/react",
+  "version": "0.2.0",
+  "description": "React hooks (useGateway/useChannel/usePresence) untuk Gateway Realtime.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "keywords": ["react", "hooks", "websocket", "realtime", "gateway"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sanhaji182/gateway_realtime.git",
+    "directory": "sdk/react"
+  },
+  "publishConfig": { "access": "public" },
+  "peerDependencies": {
+    "@gateway-realtime/sdk": "^0.2.0",
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@gateway-realtime/sdk": "file:../js",
+    "@types/react": "^19",
+    "react": "^19",
+    "typescript": "^6.0.3"
+  }
+}
