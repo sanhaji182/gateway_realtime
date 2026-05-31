@@ -767,6 +767,7 @@ npm run dev
       { id: "websocket-auth", title: "WebSocket Auth" },
       { id: "private-channel-auth", title: "Private Channel Auth" },
       { id: "rotate-secret", title: "Rotate Secret" },
+      { id: "byo-jwt", title: "Bring Your Own JWT" },
     ],
     render: () => (<>
       <h2 id="app-key-secret">App Key & Secret</h2>
@@ -804,6 +805,34 @@ Authorization: Bearer <jwt_token>
       `}</CodeBlock>
       <h2 id="rotate-secret">Rotate Secret</h2>
       <p>Dashboard → Apps → [your app] → <strong>Rotate Secret</strong>. Old secret immediately invalidated. Existing WebSocket connections are NOT dropped.</p>
+      <h2 id="byo-jwt">Bring Your Own JWT (Self-Hosted Auth)</h2>
+      <p>The gateway is <strong>auth-agnostic</strong>: it does not own your users. Any backend can mint its own WebSocket tokens by signing a JWT with the shared <code>JWT_SECRET</code> (HMAC <strong>HS256</strong>). The dashboard&apos;s <code>/api/socket/token</code> is only a convenience for the demo UI — in production, issue tokens from your own service.</p>
+      <p>Required claims: <code>user_id</code> (or <code>sub</code>/<code>uid</code>), optional <code>role</code> (use <code>admin</code> to allow wildcard subscriptions), and <code>exp</code> (expiry).</p>
+      <CodeBlock language="js">{`
+// Node.js — terbitkan token sendiri dari backend Anda
+import crypto from "crypto";
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+function gatewayToken(userId, role = "user") {
+  const header = b64({ alg: "HS256", typ: "JWT" });
+  const now = Math.floor(Date.now() / 1000);
+  const payload = b64({ user_id: userId, role, iat: now, exp: now + 3600 });
+  const sig = crypto.createHmac("sha256", process.env.JWT_SECRET)
+    .update(header + "." + payload).digest("base64url");
+  return header + "." + payload + "." + sig;
+}
+`}</CodeBlock>
+      <CodeBlock language="php">{`
+// PHP — token yang sama, ditandatangani dengan JWT_SECRET
+function gateway_token($userId, $role = 'user') {
+  $b64 = fn($o) => rtrim(strtr(base64_encode(json_encode($o)), '+/', '-_'), '=');
+  $header = $b64(['alg' => 'HS256', 'typ' => 'JWT']);
+  $now = time();
+  $payload = $b64(['user_id' => $userId, 'role' => $role, 'iat' => $now, 'exp' => $now + 3600]);
+  $sig = rtrim(strtr(base64_encode(hash_hmac('sha256', "$header.$payload", getenv('JWT_SECRET'), true)), '+/', '-_'), '=');
+  return "$header.$payload.$sig";
+}
+`}</CodeBlock>
+      <Callout type="warning">The gateway only accepts <code>alg: HS256</code>. Keep <code>JWT_SECRET</code> server-side and identical across all gateway nodes so every node can validate tokens.</Callout>
     </>),
   },
   channels: {
