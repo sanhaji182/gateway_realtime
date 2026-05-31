@@ -1,0 +1,17 @@
+{
+  "//": "Membangun paket dari sumber asli di ../../lib/socket (self-contained).",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "../../lib/socket",
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["../../lib/socket/**/*.ts"],
+  "exclude": ["../../lib/socket/redis-publish.ts"]
+}

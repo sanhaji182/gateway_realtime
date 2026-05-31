@@ -1,0 +1,29 @@
+# Publish paket SDK ke npm registry.
+# Dipicu saat GitHub Release dipublish, atau manual (workflow_dispatch).
+# PRASYARAT: tambahkan secret repo NPM_TOKEN (token npm dengan akses publish).
+name: Publish SDK
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: sdk/js
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install
+      - run: npm run build
+      - run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

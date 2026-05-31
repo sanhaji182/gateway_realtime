@@ -1,0 +1,35 @@
+{
+  "name": "@gateway-realtime/sdk",
+  "version": "0.2.0",
+  "description": "Client SDK TypeScript untuk Gateway Realtime — WebSocket pub/sub, channel private/presence, client events, history.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "keywords": ["websocket", "realtime", "pubsub", "pusher", "gateway"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sanhaji182/gateway_realtime.git",
+    "directory": "sdk/js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^6.0.3"
+  }
+}
