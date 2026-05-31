@@ -4,7 +4,7 @@ Go Gateway adalah layanan WebSocket self-hosted untuk notifikasi realtime sepert
 
 ## Untuk Apa
 
-Gateway dipakai agar aplikasi marketplace UMKM bisa mengirim chat, update pesanan, update dokumen, dan broadcast sistem tanpa menunggu refresh halaman. Backend CodeIgniter 4 tetap menangani business logic dan menyimpan history notifikasi, sementara Go Gateway fokus pada koneksi realtime.
+Gateway dipakai agar aplikasi apa pun bisa mengirim notifikasi, chat, update status, dan broadcast sistem secara realtime tanpa menunggu refresh halaman. Backend Anda (PHP, Node.js, Go, dll.) tetap menangani business logic dan menyimpan data, sementara Go Gateway fokus pada koneksi realtime.
 
 ## Arsitektur Sistem
 
@@ -19,7 +19,7 @@ Go Gateway ───── /api/socket/auth
 Redis Pub/Sub
    ▲
    │ publish notif.{userId}
-CodeIgniter 4 Backend
+Backend Anda (PHP / Node / Go / …)
 ```
 
 ## Alur Data End-to-End
@@ -28,7 +28,7 @@ CodeIgniter 4 Backend
 2. Browser membuka WebSocket ke `/ws?token=<jwt>`.
 3. Gateway memvalidasi JWT dan mendaftarkan socket ke Hub berdasarkan `userId`.
 4. Untuk private/presence channel, browser meminta signature ke `/api/socket/auth`.
-5. Backend/CI4 memproses aksi bisnis lalu publish JSON event ke Redis channel `notif.{userId}` atau `notif:{userId}`.
+5. Backend Anda memproses aksi bisnis lalu publish JSON event ke Redis channel `notif.{userId}` atau `notif:{userId}`.
 6. Redis subscriber di Gateway menerima payload dan mencari semua socket user tersebut.
 7. Gateway mengirim envelope event ke semua tab aktif milik user.
 
@@ -36,6 +36,6 @@ CodeIgniter 4 Backend
 
 - Go: goroutine ringan dan binary tunggal untuk ribuan koneksi WebSocket.
 - gorilla/websocket: implementasi WebSocket stabil dan eksplisit.
-- Redis Pub/Sub: decoupling antara CI4 publisher dan Go subscriber.
+- Redis Pub/Sub: decoupling antara backend publisher dan Go subscriber.
 - zerolog: logging terstruktur, cepat, dan cocok untuk production.
 - JWT HMAC SHA-256: handshake sederhana yang bisa diverifikasi tanpa state server.
