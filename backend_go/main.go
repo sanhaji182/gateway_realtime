@@ -97,11 +97,13 @@ func main() {
 		}
 	}()
 	mux := http.NewServeMux()
-	mux.Handle("/ws", handler.WSHandler{
+	wsHandler := handler.WSHandler{
 		Config: cfg, Hub: h, Log: logger,
 		EventHook: Ext.EventHook, RateLimiter: Ext.RateLimiter, Auth: Ext.Auth,
 		Redis: redisClient, // aktifkan message history/replay.
-	})
+	}
+	mux.Handle("/ws", wsHandler)
+	mux.Handle("/app/", handler.PusherHandler{WS: wsHandler}) // kompatibilitas subset protokol Pusher
 	mux.Handle("/health", handler.HealthHandler{Hub: h, Redis: redisClient})
 	mux.Handle("/stats", handler.StatsHandler{Config: cfg, Hub: h})
 	mux.Handle("/api/socket/auth", handler.AuthHandler{

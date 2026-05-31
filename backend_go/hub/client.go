@@ -23,6 +23,7 @@ type Client struct {
 	UserID   string          // Identitas user hasil validasi JWT untuk routing notif personal.
 	Role     string          // Role user dari JWT, dipakai untuk membatasi wildcard/admin channel.
 	AppID    string          // Opsional: id app untuk isolasi multi-app channel. Kosong = tanpa isolasi.
+	Protocol string          // "" = native, "pusher" = mode kompatibilitas protokol Pusher.
 	SocketID string          // Identitas unik per koneksi, dipakai pada signature private/presence channel.
 	Channels map[string]bool // Daftar channel yang diikuti socket ini untuk cleanup saat disconnect.
 	ConnectedAt time.Time     // Waktu koneksi diterima, dipakai untuk observability/stats.
@@ -110,6 +111,13 @@ func (c *Client) WritePump(pingInterval time.Duration) {
 				_ = c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
+			// Mode Pusher: terjemahkan envelope native ke frame Pusher; nil = frame dilewati.
+			if c.Protocol == "pusher" {
+				message = framePusher(message)
+				if message == nil {
+					continue
+				}
+			}
 			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
 				// Write gagal berarti client tidak bisa menerima data; return agar koneksi ditutup dan tidak leak.
 				c.Log.Error().Err(err).Str("socket_id", c.SocketID).Msg("websocket write failed")
@@ -147,4 +155,45 @@ func (c *Client) SendSystem(event string, data any) {
 	if err == nil {
 		c.Enqueue(payload)
 	}
+}
+
+// framePusher menerjemahkan envelope native (type/channel/event/data) ke frame
+// protokol Pusher ({event, channel, data}), di mana `data` adalah STRING JSON
+// (double-encoded) sesuai spesifikasi Pusher. Mengembalikan nil bila frame tidak
+// relevan untuk klien Pusher (mis. connected/heartbeat/history) sehingga dilewati.
+func framePusher(payload []byte) []byte {
+	var env struct {
+		Type    string          `json:"type"`
+		Channel string          `json:"channel"`
+		Event   string          `json:"event"`
+		Data    json.RawMessage `json:"data"`
+	}
+	if json.Unmarshal(payload, &env) != nil || env.Type == "" {
+		return payload // bukan envelope native (mis. handshake pusher) — kirim apa adanya.
+	}
+	ev := env.Event
+	if env.Type == "system" {
+		switch env.Event {
+		case "subscription_succeeded":
+			ev = "pusher_internal:subscription_succeeded"
+		case "subscription_error":
+			ev = "pusher:subscription_error"
+		case "member_added":
+			ev = "pusher_internal:member_added"
+		case "member_removed":
+			ev = "pusher_internal:member_removed"
+		default:
+			return nil // connected/heartbeat/history/error: tidak dikirim ke klien Pusher.
+		}
+	}
+	if len(env.Data) == 0 {
+		env.Data = json.RawMessage("{}")
+	}
+	dataStr, _ := json.Marshal(string(env.Data)) // data Pusher = string JSON
+	out := map[string]any{"event": ev, "data": json.RawMessage(dataStr)}
+	if env.Channel != "" {
+		out["channel"] = env.Channel
+	}
+	frame, _ := json.Marshal(out)
+	return frame
 }
