@@ -65,6 +65,25 @@ Self-hosted realtime event system — like Pusher, but free, open source, and ru
 - **Developer Docs** — Built-in documentation portal at `/docs`
 - **Dark Mode** — Theme toggle with CSS custom properties
 
+## How It Compares
+
+High-level comparison (competitor features may change — verify before deciding):
+
+| Capability | Gateway Realtime | Pusher | Soketi | Ably |
+|---|---|---|---|---|
+| License / hosting | MIT, self-hosted | Proprietary SaaS | MIT, self-hosted | Proprietary SaaS |
+| Cost | Free | Per message/connection | Free | Per message |
+| Public / private / presence channels | ✅ | ✅ | ✅ | ✅ |
+| Wildcard channels | ✅ | Limited | ❌ | ✅ |
+| Client events | ✅ | ✅ | ✅ | ✅ |
+| Message history / replay | ✅ (Redis) | Paid | ❌ | ✅ |
+| Horizontal scaling | ✅ (Redis) | ✅ | ✅ (Redis) | ✅ |
+| Built-in dashboard | ✅ | ✅ | ❌ | ✅ |
+| Prometheus metrics | ✅ | ❌ | ✅ | ❌ |
+| Bring-your-own JWT auth | ✅ | Limited | ✅ | Limited |
+
+REST & socket API documented in [`docs/openapi.yaml`](./docs/openapi.yaml) (OpenAPI 3.0).
+
 ## Prerequisites
 
 | Dependency | Version | Purpose |

@@ -1,0 +1,165 @@
+# Spesifikasi OpenAPI untuk REST API Gateway Realtime (/api/v1 + socket auth).
+# Render di https://editor.swagger.io atau pakai redoc/swagger-ui.
+openapi: 3.0.3
+info:
+  title: Gateway Realtime API
+  version: 0.2.0
+  description: |
+    REST API untuk publish event dan autentikasi channel. Realtime delivery terjadi via WebSocket (/ws).
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000
+    description: Dashboard (REST API & socket auth)
+  - url: http://localhost:4000
+    description: Go gateway core (WebSocket, health, metrics)
+
+tags:
+  - name: Events
+  - name: Socket Auth
+  - name: Observability
+
+paths:
+  /api/v1/events:
+    post:
+      tags: [Events]
+      summary: Publish sebuah event ke channel
+      description: |
+        Auth: header `X-App-Key` + `X-Signature` (HMAC-SHA256 dari raw body memakai App Secret),
+        atau cookie sesi dashboard + header `X-CSRF-Token`.
+      security:
+        - AppKeySignature: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishRequest"
+      responses:
+        "200": { description: Terkirim & dipublish ke Redis }
+        "202": { description: Diterima, namun Redis tidak tersedia }
+        "400": { description: Request tidak valid }
+        "401": { description: Auth diperlukan / app key salah }
+        "403": { description: Signature/CSRF tidak valid }
+        "422": { description: Envelope event tidak lolos validasi }
+    get:
+      tags: [Events]
+      summary: Daftar event terbaru (dashboard)
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: per_page, in: query, schema: { type: integer, default: 50 } }
+        - { name: channel, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Daftar event (data contoh bila belum disambungkan ke store) }
+
+  /api/v1/connections:
+    get:
+      tags: [Observability]
+      summary: Daftar koneksi WebSocket aktif
+      description: Mengambil data nyata dari gateway core (/stats) bila terjangkau, jika tidak fallback ke data demo.
+      responses:
+        "200":
+          description: Daftar koneksi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Connection" }
+                  meta: { $ref: "#/components/schemas/PageMeta" }
+
+  /api/v1/overview:
+    get:
+      tags: [Observability]
+      summary: KPI ringkasan dashboard
+      responses:
+        "200": { description: KPI, status kesehatan, event & kegagalan terbaru }
+
+  /api/socket/auth:
+    post:
+      tags: [Socket Auth]
+      summary: Tanda tangani akses channel private/presence
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [socket_id, channel_name]
+              properties:
+                socket_id: { type: string, example: "ws_abc123" }
+                channel_name: { type: string, example: "private-orders" }
+                user_id: { type: string }
+                app_id: { type: string }
+      responses:
+        "200": { description: "{ data: { auth, channel_data } }" }
+        "401": { description: Login diperlukan }
+        "403": { description: Tidak boleh join channel ini }
+
+  /api/socket/token:
+    get:
+      tags: [Socket Auth]
+      summary: Terbitkan JWT WebSocket untuk user yang login (sesi)
+      description: Hanya untuk dev/dashboard. Produksi sebaiknya terbitkan token dari backend sendiri (lihat Bring Your Own JWT).
+      responses:
+        "200": { description: "{ token }" }
+        "401": { description: Login diperlukan }
+
+  /health:
+    get:
+      tags: [Observability]
+      summary: Health check gateway core
+      servers:
+        - url: http://localhost:4000
+      responses:
+        "200": { description: "{ status, connections, uptime, redis }" }
+
+  /metrics:
+    get:
+      tags: [Observability]
+      summary: Metrik format Prometheus (gateway core)
+      servers:
+        - url: http://localhost:4000
+      responses:
+        "200": { description: Teks Prometheus (gateway_connections, gateway_channels, gateway_uptime_seconds) }
+
+components:
+  securitySchemes:
+    AppKeySignature:
+      type: apiKey
+      in: header
+      name: X-App-Key
+      description: Sertakan juga header X-Signature (HMAC-SHA256 hex dari raw body memakai App Secret).
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    PublishRequest:
+      type: object
+      required: [channel, event, data]
+      properties:
+        channel: { type: string, example: "orders" }
+        channels: { type: array, items: { type: string }, description: Alternatif multi-channel }
+        event: { type: string, example: "order.created" }
+        data: { description: Payload event (maks 10KB), example: { id: 1, total: 250000 } }
+        socket_id: { type: string, description: Socket pengirim (untuk exclude bila perlu) }
+    Connection:
+      type: object
+      properties:
+        socket_id: { type: string }
+        user_id: { type: string }
+        channels: { type: array, items: { type: string } }
+        channel_count: { type: integer }
+        connected_at: { type: string, format: date-time }
+        state: { type: string, enum: [live, idle] }
+    PageMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
