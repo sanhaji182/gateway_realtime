@@ -1,0 +1,43 @@
+# Dashboard Next.js. GATEWAY_INTERNAL_URL menunjuk ke Service backend agar
+# halaman dashboard menampilkan statistik koneksi nyata dari endpoint /stats.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: gateway-dashboard }
+  template:
+    metadata:
+      labels: { app: gateway-dashboard }
+    spec:
+      containers:
+        - name: gateway-dashboard
+          image: ghcr.io/sanhaji182/gateway-dashboard:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: GATEWAY_INTERNAL_URL
+              value: "http://gateway-backend:4000"
+            - name: NEXT_PUBLIC_WS_URL
+              value: "wss://gateway.example.com"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: gateway-secrets, key: JWT_SECRET }
+          readinessProbe:
+            httpGet: { path: /api/health, port: 3000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-dashboard
+spec:
+  selector: { app: gateway-dashboard }
+  ports:
+    - port: 3000
+      targetPort: 3000

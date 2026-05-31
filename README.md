@@ -231,7 +231,22 @@ pm2 start ./backend_go/gateway-server --name "gateway-backend"
 docker compose up -d --build
 ```
 
-### 5. Nginx Reverse Proxy
+### 5. Production Images (GHCR) & Kubernetes
+
+Tagging a release (`git tag v0.2.0 && git push --tags`) builds and pushes images to GHCR via `.github/workflows/release.yml`:
+
+```bash
+# Jalankan dengan image produksi (bukan build lokal):
+JWT_SECRET=$(openssl rand -hex 32) docker compose -f docker-compose.prod.yml up -d
+
+# Atau deploy ke Kubernetes:
+kubectl create secret generic gateway-secrets --from-literal=JWT_SECRET=$(openssl rand -hex 32)
+kubectl apply -f deploy/k8s/
+```
+
+Backend dapat di-scale horizontal (`replicas > 1`) karena pub/sub & presence dibagikan lewat Redis.
+
+### 6. Nginx Reverse Proxy
 
 ```nginx
 server {

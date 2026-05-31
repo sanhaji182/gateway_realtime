@@ -1,0 +1,48 @@
+# Backend Go WebSocket gateway. Bisa di-scale horizontal (replicas > 1) karena
+# pub/sub & presence sudah dibagikan lewat Redis.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-backend
+spec:
+  replicas: 2 # aman di-scale: state realtime dibagikan via Redis
+  selector:
+    matchLabels: { app: gateway-backend }
+  template:
+    metadata:
+      labels: { app: gateway-backend }
+    spec:
+      containers:
+        - name: gateway-backend
+          image: ghcr.io/sanhaji182/gateway-backend:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: PORT
+              value: "4000"
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: ALLOWED_ORIGINS
+              value: "https://dashboard.example.com"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef: { name: gateway-secrets, key: JWT_SECRET }
+          # Probe kesehatan memakai endpoint /health.
+          readinessProbe:
+            httpGet: { path: /health, port: 4000 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 4000 }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-backend
+spec:
+  selector: { app: gateway-backend }
+  ports:
+    - port: 4000
+      targetPort: 4000

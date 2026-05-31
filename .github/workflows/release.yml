@@ -1,0 +1,56 @@
+# Workflow rilis: membangun & mem-push image Docker ke GitHub Container Registry (GHCR).
+# Dipicu saat ada tag versi (mis. git tag v0.2.0 && git push --tags).
+# Memakai GITHUB_TOKEN bawaan (tidak perlu secret tambahan) selama permission packages: write diberikan.
+name: Release Images
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # wajib agar bisa push ke GHCR
+    strategy:
+      matrix:
+        include:
+          # Image backend (Go WebSocket gateway)
+          - name: gateway-backend
+            context: ./backend_go
+            dockerfile: ./backend_go/Dockerfile
+          # Image dashboard (Next.js)
+          - name: gateway-dashboard
+            context: .
+            dockerfile: ./Dockerfile.frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # Login ke GHCR memakai token bawaan workflow.
+      - name: Login ke GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Hitung tag image otomatis (versi dari git tag + 'latest').
+      - name: Tentukan metadata/tag image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=raw,value=latest
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

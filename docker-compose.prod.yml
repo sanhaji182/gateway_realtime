@@ -1,0 +1,58 @@
+# Docker Compose PRODUKSI — memakai image siap pakai dari GHCR (bukan build lokal).
+#
+# Cara pakai:
+#   1. Set variabel di file .env (lihat .env.example), minimal JWT_SECRET & domain.
+#   2. docker compose -f docker-compose.prod.yml pull
+#   3. docker compose -f docker-compose.prod.yml up -d
+#
+# Disarankan berjalan di belakang reverse proxy (nginx/Caddy) dengan TLS.
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  gateway:
+    image: ghcr.io/${GHCR_OWNER:-sanhaji182}/gateway-backend:${IMAGE_TAG:-latest}
+    environment:
+      - PORT=4000
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET wajib diisi} # gagal start bila kosong
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://dashboard.example.com}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    ports:
+      - "4000:4000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  dashboard:
+    image: ghcr.io/${GHCR_OWNER:-sanhaji182}/gateway-dashboard:${IMAGE_TAG:-latest}
+    environment:
+      - NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-https://dashboard.example.com/api/v1}
+      - NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-wss://gateway.example.com}
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET wajib diisi}
+      # URL internal core agar dashboard mengambil statistik koneksi nyata dari /stats.
+      - GATEWAY_INTERNAL_URL=http://gateway:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
+volumes:
+  redis_data:
