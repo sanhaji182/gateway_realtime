@@ -1,0 +1,30 @@
+# Publish paket React (@gateway-realtime/react) ke npm.
+# Dipicu saat GitHub Release dipublish, atau manual (workflow_dispatch).
+# PRASYARAT: secret repo NPM_TOKEN (token npm dengan akses publish).
+name: Publish React SDK
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+      # Build paket SDK dulu agar dependency @gateway-realtime/sdk (file:../js) bisa di-resolve.
+      - name: Build SDK js
+        working-directory: sdk/js
+        run: npm install && npm run build
+      - name: Build & publish React
+        working-directory: sdk/react
+        run: npm install && npm run build && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
