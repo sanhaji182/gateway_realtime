@@ -26,6 +26,41 @@ type Client struct {
 	Channels map[string]bool // Daftar channel yang diikuti socket ini untuk cleanup saat disconnect.
 	ConnectedAt time.Time     // Waktu koneksi diterima, dipakai untuk observability/stats.
 	Log      zerolog.Logger  // Logger terstruktur yang aman dipakai lintas goroutine.
+
+	// Token bucket anti-flood untuk pesan MASUK. Hanya diakses dari goroutine ReadPump
+	// (single-reader) sehingga tidak perlu lock. Aktif bila msgBurst > 0.
+	msgTokens float64
+	msgRate   float64
+	msgBurst  float64
+	msgLast   time.Time
+}
+
+// EnableRateLimit mengaktifkan pembatasan laju pesan masuk per koneksi.
+// rate = token/detik, burst = kapasitas maksimum. Jika burst <= 0, fitur dimatikan.
+func (c *Client) EnableRateLimit(rate, burst float64) {
+	c.msgRate = rate
+	c.msgBurst = burst
+	c.msgTokens = burst
+	c.msgLast = time.Now()
+}
+
+// AllowMessage mengembalikan true jika pesan masuk boleh diproses (token tersedia).
+// Dipanggil dari ReadPump sebelum memproses tiap frame; mencegah satu socket membanjiri server.
+func (c *Client) AllowMessage() bool {
+	if c.msgBurst <= 0 {
+		return true // fitur tidak aktif.
+	}
+	now := time.Now()
+	c.msgTokens += now.Sub(c.msgLast).Seconds() * c.msgRate
+	if c.msgTokens > c.msgBurst {
+		c.msgTokens = c.msgBurst
+	}
+	c.msgLast = now
+	if c.msgTokens >= 1 {
+		c.msgTokens--
+		return true
+	}
+	return false
 }
 
 // NewClient membuat objek Client setelah handshake WebSocket berhasil.

@@ -20,6 +20,8 @@ type Config struct {
 	LogLevel       string        // Level logging zerolog yang diparse saat startup.
 	RateLimitRPS   float64       // Token per detik per IP untuk HTTP rate limiter (default 10).
 	RateLimitBurst float64       // Kapasitas burst token bucket per IP (default 20).
+	MsgRate        float64       // Pesan masuk per detik per koneksi WebSocket (anti-flood, default 20).
+	MsgBurst       float64       // Kapasitas burst pesan masuk per koneksi (default 40).
 }
 
 // Load membaca semua environment variable dan menerapkan default lokal.
@@ -35,6 +37,8 @@ func Load() Config {
 		LogLevel:       getenv("LOG_LEVEL", "info"),
 		RateLimitRPS:   float64(getenvInt("RATE_LIMIT_RPS", 10)),
 		RateLimitBurst: float64(getenvInt("RATE_LIMIT_BURST", 20)),
+		MsgRate:        float64(getenvInt("MSG_RATE_PER_SEC", 20)),
+		MsgBurst:       float64(getenvInt("MSG_BURST", 40)),
 	}
 }
 

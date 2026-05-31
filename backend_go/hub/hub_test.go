@@ -86,6 +86,29 @@ func TestPresenceSnapshot(t *testing.T) {
 	}
 }
 
+func TestClientRateLimit(t *testing.T) {
+	h := New(zerolog.Nop())
+	c := testClient(h, "u", "s1", "user")
+	// burst 3, rate 0 → hanya 3 pesan pertama lolos.
+	c.EnableRateLimit(0, 3)
+	allowed := 0
+	for i := 0; i < 6; i++ {
+		if c.AllowMessage() {
+			allowed++
+		}
+	}
+	if allowed != 3 {
+		t.Fatalf("burst 3 harus mengizinkan 3 pesan, got %d", allowed)
+	}
+	// Client tanpa EnableRateLimit harus selalu mengizinkan.
+	c2 := testClient(h, "u2", "s2", "user")
+	for i := 0; i < 100; i++ {
+		if !c2.AllowMessage() {
+			t.Fatal("tanpa rate limit harus selalu allow")
+		}
+	}
+}
+
 func TestSnapshotAndLeave(t *testing.T) {
 	h := New(zerolog.Nop())
 	a := testClient(h, "ua", "s1", "user")

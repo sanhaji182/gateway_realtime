@@ -77,6 +77,7 @@ func (h WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	socketID := newSocketID()
 	client := hub.NewClient(h.Hub, conn, claims.UserID, claims.Role, socketID, h.Log)
+	client.EnableRateLimit(h.Config.MsgRate, h.Config.MsgBurst) // anti-flood pesan masuk per koneksi
 	h.Hub.Register(client)
 	client.SendSystem("connected", map[string]any{"socketId": socketID})
 	h.EventHook.OnConnect("", socketID)
@@ -85,6 +86,11 @@ func (h WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h WSHandler) handleMessage(c *hub.Client, payload []byte) {
+	// Anti-flood: batasi laju pesan masuk per koneksi sebelum diproses.
+	if !c.AllowMessage() {
+		c.SendSystem("error", map[string]any{"code": "RATE_LIMITED", "message": "Terlalu banyak pesan, pelan-pelan"})
+		return
+	}
 	var msg inboundMessage
 	if err := json.Unmarshal(payload, &msg); err != nil {
 		h.Log.Error().Err(err).Msg("invalid websocket message")
