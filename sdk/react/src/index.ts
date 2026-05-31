@@ -1,7 +1,7 @@
 // React hooks tipis di atas @gateway-realtime/sdk.
 // Menyederhanakan pemakaian di komponen: kelola koneksi, subscribe, dan presence
 // mengikuti lifecycle komponen (auto cleanup saat unmount).
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   GatewayClient,
   type GatewayClientOptions,
@@ -13,12 +13,11 @@ import {
 // useGateway membuat & mengelola satu koneksi GatewayClient selama komponen hidup.
 // Mengembalikan client (untuk dipakai hook lain) dan state koneksi terkini.
 export function useGateway(options: GatewayClientOptions, token?: string) {
-  const ref = useRef<GatewayClient | null>(null);
-  if (!ref.current) ref.current = new GatewayClient(options);
+  // useState lazy-init: client dibuat sekali & stabil (tidak akses ref saat render).
+  const [client] = useState(() => new GatewayClient(options));
   const [state, setState] = useState<string>("idle");
 
   useEffect(() => {
-    const client = ref.current!;
     if (token) client.setToken(token);
     const onState = (p: unknown) => {
       if (p && typeof p === "object" && "to" in p) setState(String((p as { to: unknown }).to));
@@ -32,7 +31,7 @@ export function useGateway(options: GatewayClientOptions, token?: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  return { client: ref.current, state };
+  return { client, state };
 }
 
 // useChannel subscribe ke sebuah channel dan mem-bind handler (map event -> fungsi)
