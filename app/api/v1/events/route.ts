@@ -5,8 +5,29 @@ import { publishToRedis } from "@/lib/socket/redis-publish";
 import { dispatchWebhooks } from "@/lib/webhooks";
 import { findAppByKey, verifyPublishSignature } from "@/lib/auth/app-credentials";
 import { listEvents } from "@/app/api/v1/events/data";
+import { getRedis } from "@/lib/redis-client";
+import type { EventItem } from "@/lib/api";
 
 export async function GET(request: NextRequest) {
+  const redis = await getRedis();
+  if (redis) {
+    const raw = await redis.lrange("events:recent", 0, 199).catch(() => [] as string[]);
+    if (raw.length > 0) {
+      const sp = request.nextUrl.searchParams;
+      const search = sp.get("search")?.toLowerCase() ?? "";
+      const channel = sp.get("channel")?.toLowerCase() ?? "";
+      const all = raw
+        .map((s) => { try { return JSON.parse(s) as EventItem; } catch { return null; } })
+        .filter((x): x is EventItem => x !== null)
+        .filter((x) => !search || x.channel.toLowerCase().includes(search) || x.event.toLowerCase().includes(search))
+        .filter((x) => !channel || x.channel.toLowerCase().includes(channel));
+      const page = Number(sp.get("page") ?? 1);
+      const perPage = Number(sp.get("per_page") ?? 50);
+      const start = (page - 1) * perPage;
+      return NextResponse.json({ data: all.slice(start, start + perPage), meta: { page, per_page: perPage, total: all.length } });
+    }
+  }
+  // Fallback: belum ada event nyata (atau Redis mati) — sajikan data demo.
   const result = listEvents(request.nextUrl.searchParams);
   return NextResponse.json({ data: result.data, meta: result.meta });
 }

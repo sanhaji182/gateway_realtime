@@ -17,14 +17,26 @@ export const stats: Record<string, AppStats & { traffic: TrafficPoint[] }> = Obj
 export const events: Record<string, EventItem[]> = Object.fromEntries(apps.map((app) => [app.id, Array.from({ length: 8 }).map((_, index) => ({ id: `evt_${app.id}_${index}`, app_id: app.id, app_name: app.name, channel: index % 2 === 0 ? "events.1" : "notifications.1", event: index % 2 === 0 ? "event.triggered" : "notification.sent", source: "ci4-api", size_bytes: 280 + index * 12, status: index === 3 ? "error" : "ok", request_id: `req_${app.id}_${index}`, published_at: new Date(Date.now() - index * 8 * 60 * 1000).toISOString() }))])) as Record<string, EventItem[]>;
 
 export function listApps(searchParams: URLSearchParams) {
+  const source = envApps().length > 0 ? envApps() : apps;
   const search = searchParams.get("search")?.toLowerCase() ?? "";
   const status = searchParams.get("status");
   const sort = searchParams.get("sort") ?? "name";
   const page = Number(searchParams.get("page") ?? 1);
   const perPage = Number(searchParams.get("per_page") ?? 20);
-  const filtered = apps.filter((app) => (!search || app.name.includes(search) || app.id.includes(search))).filter((app) => (!status || status === "all" || app.status === status)).sort((a, b) => sortApps(a, b, sort));
+  const filtered = source.filter((app) => (!search || app.name.includes(search) || app.id.includes(search))).filter((app) => (!status || status === "all" || app.status === status)).sort((a, b) => sortApps(a, b, sort));
   const start = (page - 1) * perPage;
   return { data: filtered.slice(start, start + perPage), meta: { page, per_page: perPage, total: filtered.length } };
+}
+
+// Apps NYATA dari env GATEWAY_APP_SECRETS (format: "appId:key:secret,..."). Read-only.
+function envApps(): AppListItem[] {
+  const raw = process.env.GATEWAY_APP_SECRETS;
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((entry) => entry.split(":")[0])
+    .filter(Boolean)
+    .map((id) => ({ id, name: id, status: "active" as const, connections: 0, events_today: 0, webhook_status: "none" as const, updated_at: new Date().toISOString() }));
 }
 
 function sortApps(a: AppListItem, b: AppListItem, sort: string) {
@@ -34,5 +46,13 @@ function sortApps(a: AppListItem, b: AppListItem, sort: string) {
   return a.name.localeCompare(b.name);
 }
 
-export function findApp(id: string) { return details[id] ?? null; }
+export function findApp(id: string) {
+  const raw = process.env.GATEWAY_APP_SECRETS;
+  if (raw) {
+    const found = raw.split(",").map((e) => e.split(":")).find((p) => p[0] === id);
+    if (!found) return null;
+    return { id, name: id, status: "active", key: found[1] ?? "", secret: null, allowed_origins: [], webhook_endpoints: [], created_at: new Date().toISOString() } as AppDetail;
+  }
+  return details[id] ?? null;
+}
 export function okWebhook(body: Partial<WebhookEndpoint>) { return { id: body.id ?? `wh_${Date.now()}`, url: body.url ?? "", events: body.events ?? ["*"], status: body.status ?? "ok" }; }

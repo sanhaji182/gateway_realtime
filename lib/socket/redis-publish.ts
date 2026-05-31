@@ -21,13 +21,24 @@ export async function publishToRedis(channel: string, event: string, data: unkno
       ts: Date.now(),
     });
     const historyKey = "history:" + channel;
-    // Pipeline: simpan ke history (LPUSH), potong ke cap (LTRIM), set TTL, lalu publish.
+    const ts = Date.now();
+    // Ringkasan event untuk halaman Events dashboard (log lintas-channel, ber-cap).
+    const recent = JSON.stringify({
+      id: `evt_${ts}_${Math.random().toString(16).slice(2, 8)}`,
+      app_id: "", app_name: "", channel, event,
+      source: "api", size_bytes: Buffer.byteLength(message),
+      status: "ok", request_id: `req_${ts}`, published_at: new Date(ts).toISOString(),
+    });
+    // Pipeline: simpan ke history (LPUSH), potong ke cap (LTRIM), set TTL, catat recent, lalu publish.
     // Disimpan di sisi publisher agar tidak terduplikasi antar node gateway.
     await pub
       .pipeline()
       .lpush(historyKey, message)
       .ltrim(historyKey, 0, HISTORY_MAX - 1)
       .expire(historyKey, HISTORY_TTL)
+      .lpush("events:recent", recent)
+      .ltrim("events:recent", 0, 199)
+      .expire("events:recent", HISTORY_TTL)
       .publish("events." + channel, message)
       .exec();
     return true;
