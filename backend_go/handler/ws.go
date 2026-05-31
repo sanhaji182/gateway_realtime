@@ -45,6 +45,7 @@ type inboundMessage struct {
 	Auth        string          `json:"auth"`
 	ChannelData json.RawMessage `json:"channel_data"`
 	Count       int             `json:"count"` // jumlah pesan history yang diminta
+	After       int64           `json:"after"` // resume: hanya event dengan ts > after
 	Event       string          `json:"event"` // nama event untuk client event
 	Data        json.RawMessage `json:"data"`  // payload client event
 }
@@ -112,7 +113,7 @@ func (h WSHandler) handleMessage(c *hub.Client, payload []byte) {
 	case "ping":
 		c.SendSystem("heartbeat", map[string]any{"socketId": c.SocketID})
 	case "history":
-		h.history(c, channel, msg.Count)
+		h.history(c, channel, msg.Count, msg.After)
 	case "client_event":
 		h.clientEvent(c, channel, msg.Event, msg.Data)
 	default:
@@ -158,7 +159,7 @@ func (h WSHandler) clientEvent(c *hub.Client, channel, event string, data json.R
 // history mengirim ulang (replay) beberapa pesan terakhir pada sebuah channel.
 // Pesan disimpan saat publish ke Redis list "history:<channel>" (ber-cap).
 // Hanya subscriber channel tersebut yang boleh meminta, demi privasi channel private/presence.
-func (h WSHandler) history(c *hub.Client, channel string, count int) {
+func (h WSHandler) history(c *hub.Client, channel string, count int, after int64) {
 	if h.Redis == nil { // history butuh Redis; lewati bila tidak tersedia.
 		return
 	}
@@ -177,6 +178,15 @@ func (h WSHandler) history(c *hub.Client, channel string, count int) {
 	}
 	messages := make([]json.RawMessage, 0, len(vals))
 	for _, v := range vals {
+		// Resume: jika after > 0, hanya sertakan event yang lebih baru dari ts terakhir yang diterima klien.
+		if after > 0 {
+			var meta struct {
+				TS int64 `json:"ts"`
+			}
+			if json.Unmarshal([]byte(v), &meta) == nil && meta.TS <= after {
+				continue
+			}
+		}
 		messages = append(messages, json.RawMessage(v))
 	}
 	c.SendSystem("history", map[string]any{"channel": channel, "messages": messages})

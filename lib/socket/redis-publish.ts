@@ -2,7 +2,7 @@
 // Selain publish, setiap event juga disimpan ke "history:<channel>" (list ber-cap)
 // agar client bisa me-replay pesan terakhir lewat fitur message history.
 
-import { getRedis } from "@/lib/redis-client";
+import { getRedis } from "../redis-client";
 
 // Maksimum pesan history yang disimpan per channel (configurable via env).
 const HISTORY_MAX = Number(process.env.HISTORY_MAX || 50);

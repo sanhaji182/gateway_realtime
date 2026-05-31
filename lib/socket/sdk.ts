@@ -18,6 +18,8 @@ export type GatewayClientOptions = {
 
 export type SubscribeOptions = {
   auth?: () => Promise<Response | SocketAuthPayload> | Response | SocketAuthPayload;
+  // resume: saat reconnect, otomatis ambil & replay event yang terlewat (pakai history + ts terakhir).
+  resume?: boolean;
 };
 
 export type SocketAuthPayload = {
@@ -47,6 +49,8 @@ export class GatewayChannel {
   private memberMap = new Map<string, PresenceMember>();
   state: SubscriptionState = "pending";
   options?: SubscribeOptions;
+  // Timestamp event terakhir yang diterima — dipakai untuk resume-on-reconnect.
+  lastEventTs = 0;
 
   constructor(client: GatewayClient, name: string, options?: SubscribeOptions) {
     this.client = client;
@@ -81,8 +85,8 @@ export class GatewayChannel {
 
   // history meminta replay beberapa pesan terakhir pada channel ini.
   // Hasil dikirim balik sebagai event "history" (pakai channel.on("history", cb)).
-  history(count = 50) {
-    this.client.requestHistory(this.name, count);
+  history(count = 50, after = 0) {
+    this.client.requestHistory(this.name, count, after);
   }
 
   // trigger mengirim client event (nama harus diawali "client-") ke channel ini.
@@ -123,6 +127,8 @@ export class GatewayClient {
   private manualDisconnect = false;
   private currentState: GatewayClientState = "idle";
   private currentSocketId: string | null = null;
+  // Channel yang sedang menunggu replay history untuk resume-on-reconnect.
+  private resuming = new Set<string>();
 
   constructor(options: GatewayClientOptions) {
     this.options = { authEndpoint: "/api/socket/auth", autoReconnect: true, pingInterval: 30000, ...options };
@@ -186,8 +192,9 @@ export class GatewayClient {
 
   // requestHistory meminta server me-replay pesan terakhir pada channel.
   // Server membalas event "history" yang diteruskan ke handler channel terkait.
-  requestHistory(channelName: string, count = 50) {
-    this.send({ type: "history", channel: channelName, count });
+  // after (ms) opsional: hanya ambil event lebih baru dari ts tersebut (untuk resume).
+  requestHistory(channelName: string, count = 50, after = 0) {
+    this.send({ type: "history", channel: channelName, count, after });
   }
 
   // triggerClientEvent mengirim client event ke server untuk diteruskan ke
@@ -325,21 +332,42 @@ export class GatewayClient {
       if (channel) {
         channel.state = "subscribed";
         channel.handleEvent("subscription_succeeded", envelope.data);
+        // Resume-on-reconnect: jika diaktifkan & sudah pernah menerima event, ambil yang terlewat.
+        if (channel.options?.resume && channel.lastEventTs > 0) {
+          this.resuming.add(channel.name);
+          this.requestHistory(channel.name, 100, channel.lastEventTs);
+        }
       }
     }
     if (envelope.event === "subscription_error" && isRecord(envelope.data) && typeof envelope.data.channel === "string") {
       const channel = this.channels.get(envelope.data.channel);
       if (channel) channel.handleEvent("subscription_error", envelope.data);
     }
-    // Replay history: teruskan ke handler channel agar bisa di-bind via channel.on("history", cb).
+    // Replay history: jika sedang resume, putar ulang event yang terlewat;
+    // selain itu teruskan sebagai event "history" (channel.on("history", cb)).
     if (envelope.event === "history" && isRecord(envelope.data) && typeof envelope.data.channel === "string") {
       const channel = this.channels.get(envelope.data.channel);
-      if (channel) channel.handleEvent("history", envelope.data);
+      if (!channel) return;
+      if (this.resuming.has(channel.name)) {
+        this.resuming.delete(channel.name);
+        const messages = Array.isArray(envelope.data.messages) ? envelope.data.messages : [];
+        // History tersimpan baru→lama; balik agar replay urut lama→baru.
+        [...messages].reverse().forEach((m) => {
+          if (isRecord(m) && typeof m.ts === "number" && m.ts > channel.lastEventTs && typeof m.event === "string") {
+            channel.lastEventTs = m.ts;
+            channel.handleEvent(m.event, m.data);
+          }
+        });
+      } else {
+        channel.handleEvent("history", envelope.data);
+      }
     }
   }
 
   private handleEvent(envelope: Extract<GatewayEnvelope, { type: "event" }>) {
     const channel = this.channels.get(envelope.channel);
+    // Lacak ts terakhir untuk resume-on-reconnect.
+    if (channel && typeof envelope.ts === "number") channel.lastEventTs = envelope.ts;
     channel?.handleEvent(envelope.event, envelope.data);
     this.globalHandlers.get(envelope.event)?.forEach((handler) => safeCall(handler, envelope.data));
     this.globalHandlers.get("*")?.forEach((handler) => safeCall(handler, envelope.event, envelope.data));
