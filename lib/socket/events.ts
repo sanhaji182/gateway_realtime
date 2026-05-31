@@ -25,7 +25,8 @@ export type SocketSystemEventName =
   | "subscription_succeeded"
   | "subscription_error"
   | "member_added"
-  | "member_removed";
+  | "member_removed"
+  | "history";
 
 export type SocketSystemEnvelope<TData = unknown> = {
   type: "system";
@@ -64,7 +65,8 @@ export const systemEventNames = new Set<SocketSystemEventName>([
   "subscription_succeeded",
   "subscription_error",
   "member_added",
-  "member_removed"
+  "member_removed",
+  "history"
 ]);
 
 const eventNamePattern = /^[a-z0-9]+(?:\.[a-z0-9]+)+$/;

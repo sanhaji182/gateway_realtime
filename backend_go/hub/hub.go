@@ -205,6 +205,15 @@ func (h *Hub) LeaveChannel(c *Client, channel string) {
 	}
 }
 
+// IsSubscribed memeriksa (lock-safe) apakah socket tertentu sedang subscribe ke channel.
+// Dipakai untuk men-gate permintaan history agar hanya subscriber yang boleh ambil.
+func (h *Hub) IsSubscribed(channel, socketID string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	group := h.channels[channel]
+	return group != nil && group[socketID] != nil
+}
+
 // HasSocket memeriksa apakah socket id masih aktif di Hub.
 // Dipakai endpoint auth untuk menolak signature bagi socket yang sudah disconnect.
 func (h *Hub) HasSocket(socketID string) bool {

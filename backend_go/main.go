@@ -71,6 +71,7 @@ func main() {
 	mux.Handle("/ws", handler.WSHandler{
 		Config: cfg, Hub: h, Log: logger,
 		EventHook: Ext.EventHook, RateLimiter: Ext.RateLimiter, Auth: Ext.Auth,
+		Redis: redisClient, // aktifkan message history/replay.
 	})
 	mux.Handle("/health", handler.HealthHandler{Hub: h, Redis: redisClient})
 	mux.Handle("/stats", handler.StatsHandler{Config: cfg, Hub: h})

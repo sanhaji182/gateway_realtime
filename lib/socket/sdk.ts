@@ -79,6 +79,12 @@ export class GatewayChannel {
     this.client.unsubscribe(this.name);
   }
 
+  // history meminta replay beberapa pesan terakhir pada channel ini.
+  // Hasil dikirim balik sebagai event "history" (pakai channel.on("history", cb)).
+  history(count = 50) {
+    this.client.requestHistory(this.name, count);
+  }
+
   members() {
     return Array.from(this.memberMap.values());
   }
@@ -170,6 +176,12 @@ export class GatewayClient {
   unsubscribe(channelName: string) {
     this.channels.delete(channelName);
     this.send({ type: "unsubscribe", channel: channelName });
+  }
+
+  // requestHistory meminta server me-replay pesan terakhir pada channel.
+  // Server membalas event "history" yang diteruskan ke handler channel terkait.
+  requestHistory(channelName: string, count = 50) {
+    this.send({ type: "history", channel: channelName, count });
   }
 
   bind(eventName: string, handler: ChannelEventHandler) {
@@ -306,6 +318,11 @@ export class GatewayClient {
     if (envelope.event === "subscription_error" && isRecord(envelope.data) && typeof envelope.data.channel === "string") {
       const channel = this.channels.get(envelope.data.channel);
       if (channel) channel.handleEvent("subscription_error", envelope.data);
+    }
+    // Replay history: teruskan ke handler channel agar bisa di-bind via channel.on("history", cb).
+    if (envelope.event === "history" && isRecord(envelope.data) && typeof envelope.data.channel === "string") {
+      const channel = this.channels.get(envelope.data.channel);
+      if (channel) channel.handleEvent("history", envelope.data);
     }
   }
 

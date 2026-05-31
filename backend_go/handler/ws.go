@@ -3,6 +3,7 @@
 package handler
 
 import (
+	"context"
 	"crypto/hmac"
 	"net/http"
 	"crypto/rand"
@@ -18,6 +19,7 @@ import (
 	"go-gateway/hub"
 
 	"github.com/gorilla/websocket"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 )
 
@@ -31,6 +33,8 @@ type WSHandler struct {
 	EventHook   extensions.EventHook
 	RateLimiter extensions.RateLimiter
 	Auth        extensions.Authenticator
+	// Redis opsional untuk fitur message history/replay. Jika nil, history dinonaktifkan.
+	Redis       *goredis.Client
 }
 
 type inboundMessage struct {
@@ -39,6 +43,7 @@ type inboundMessage struct {
 	ChannelName string          `json:"channel_name"`
 	Auth        string          `json:"auth"`
 	ChannelData json.RawMessage `json:"channel_data"`
+	Count       int             `json:"count"` // jumlah pesan history yang diminta
 }
 
 func (h WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -97,9 +102,38 @@ func (h WSHandler) handleMessage(c *hub.Client, payload []byte) {
 		}
 	case "ping":
 		c.SendSystem("heartbeat", map[string]any{"socketId": c.SocketID})
+	case "history":
+		h.history(c, channel, msg.Count)
 	default:
 		c.SendSystem("error", map[string]any{"code": "PROTOCOL_ERROR", "message": "Unknown message type"})
 	}
+}
+
+// history mengirim ulang (replay) beberapa pesan terakhir pada sebuah channel.
+// Pesan disimpan saat publish ke Redis list "history:<channel>" (ber-cap).
+// Hanya subscriber channel tersebut yang boleh meminta, demi privasi channel private/presence.
+func (h WSHandler) history(c *hub.Client, channel string, count int) {
+	if h.Redis == nil { // history butuh Redis; lewati bila tidak tersedia.
+		return
+	}
+	if !validChannel(channel) || !h.Hub.IsSubscribed(channel, c.SocketID) {
+		c.SendSystem("error", map[string]any{"code": "FORBIDDEN", "message": "Subscribe ke channel dulu sebelum minta history"})
+		return
+	}
+	if count <= 0 || count > 100 { // batasi agar tidak membebani.
+		count = 50
+	}
+	// LRANGE 0..count-1 mengambil pesan terbaru (publish memakai LPUSH).
+	vals, err := h.Redis.LRange(context.Background(), "history:"+channel, 0, int64(count-1)).Result()
+	if err != nil {
+		c.SendSystem("error", map[string]any{"code": "HISTORY_ERROR", "message": "Gagal membaca history"})
+		return
+	}
+	messages := make([]json.RawMessage, 0, len(vals))
+	for _, v := range vals {
+		messages = append(messages, json.RawMessage(v))
+	}
+	c.SendSystem("history", map[string]any{"channel": channel, "messages": messages})
 }
 
 func (h WSHandler) subscribe(c *hub.Client, channel, authSig string, channelData json.RawMessage) {
