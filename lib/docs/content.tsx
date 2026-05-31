@@ -2160,4 +2160,70 @@ const payload = await encryptPayload(key, JSON.stringify({ text: "halo" }));
       <Callout type="warning">Distribusikan <code>SHARED_SECRET</code> hanya ke pihak yang berhak (mis. lewat endpoint auth Anda setelah otorisasi). Jangan menaruhnya di kode frontend publik. Kunci berbeda per channel, jadi kebocoran satu channel tidak membuka channel lain.</Callout>
     </>),
   },
+  "react-hooks": {
+    toc: [
+      { id: "install", title: "Install" },
+      { id: "usegateway", title: "useGateway" },
+      { id: "usechannel", title: "useChannel" },
+      { id: "usepresence", title: "usePresence" },
+    ],
+    render: () => (<>
+      <p>Paket <code>@gateway-realtime/react</code> menyediakan hook tipis di atas SDK untuk mengelola koneksi, subscribe, dan presence mengikuti lifecycle komponen (auto cleanup saat unmount).</p>
+      <h2 id="install">Install</h2>
+      <CodeBlock language="bash">{`
+npm install @gateway-realtime/react @gateway-realtime/sdk
+      `}</CodeBlock>
+      <h2 id="usegateway">useGateway</h2>
+      <p>Membuat & mengelola satu koneksi; mengembalikan <code>client</code> dan <code>state</code> koneksi.</p>
+      <CodeBlock language="tsx">{`
+import { useGateway, useChannel, usePresence } from "@gateway-realtime/react";
+
+function Room() {
+  const { client, state } = useGateway({ key: "pk_test_xxx", host: "wss://gateway.example.com" }, jwt);
+  return <span>Status: {state}</span>;
+}
+      `}</CodeBlock>
+      <h2 id="usechannel">useChannel</h2>
+      <p>Subscribe ke channel dan bind handler (map event → fungsi); otomatis unsubscribe saat unmount.</p>
+      <CodeBlock language="tsx">{`
+useChannel(client, "orders.99", {
+  "order.paid": (data) => console.log("paid", data),
+});
+      `}</CodeBlock>
+      <h2 id="usepresence">usePresence</h2>
+      <p>Subscribe presence channel dan melacak daftar member secara reaktif.</p>
+      <CodeBlock language="tsx">{`
+const { members, count } = usePresence(client, "presence-room");
+return <div>Online: {count}</div>;
+      `}</CodeBlock>
+    </>),
+  },
+  reliability: {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "ratelimit", title: "Rate Limit per Koneksi" },
+      { id: "resume", title: "Resume on Reconnect" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>Gateway memiliki dua mekanisme keandalan: pembatasan laju pesan per koneksi (anti-flood) dan pemulihan event yang terlewat saat reconnect.</p>
+      <h2 id="ratelimit">Rate Limit per Koneksi (Anti-Flood)</h2>
+      <p>Setiap koneksi WebSocket dibatasi lajunya memakai token bucket. Jika melebihi kuota, server membalas event sistem <code>error</code> dengan kode <code>RATE_LIMITED</code> dan pesan tidak diproses.</p>
+      <table>
+        <thead><tr><th>Env</th><th>Default</th><th>Arti</th></tr></thead>
+        <tbody>
+          <tr><td><code>MSG_RATE_PER_SEC</code></td><td>20</td><td>Pesan masuk per detik per koneksi</td></tr>
+          <tr><td><code>MSG_BURST</code></td><td>40</td><td>Kapasitas burst per koneksi</td></tr>
+        </tbody>
+      </table>
+      <Callout type="info">Selain itu ada rate limit HTTP per-IP (<code>RATE_LIMIT_RPS</code>/<code>RATE_LIMIT_BURST</code>) di lapisan koneksi.</Callout>
+      <h2 id="resume">Resume on Reconnect</h2>
+      <p>Aktifkan opsi <code>resume</code> saat subscribe. Setelah reconnect, SDK otomatis mengambil dan me-replay event yang terlewat sejak event terakhir yang diterima (memanfaatkan message history).</p>
+      <CodeBlock language="js">{`
+const channel = client.subscribe("orders.99", { resume: true });
+channel.on("order.paid", (data) => render(data)); // termasuk event yang terlewat saat sempat putus
+      `}</CodeBlock>
+      <Callout type="info">Resume mengandalkan history (Redis). Jumlah event yang dapat dipulihkan dibatasi oleh <code>HISTORY_MAX</code> per channel.</Callout>
+    </>),
+  },
 };

@@ -39,6 +39,7 @@ export const docsNav: DocsSection[] = [
     title: "SDK Reference",
     pages: [
       { title: "JavaScript SDK", slug: "javascript-sdk" },
+      { title: "React Hooks", slug: "react-hooks" },
       { title: "PHP SDK", slug: "php-sdk" },
       { title: "Browser GatewayClient", slug: "browser-sdk" },
     ],
@@ -57,6 +58,7 @@ export const docsNav: DocsSection[] = [
     title: "Advanced",
     pages: [
       { title: "Security Model", slug: "security" },
+      { title: "Reliability", slug: "reliability" },
       { title: "Encrypted Channels", slug: "encrypted-channels" },
       { title: "Pusher Compatibility", slug: "pusher-compat" },
       { title: "SaaS Extensions", slug: "saas-extensions" },
