@@ -1,6 +1,6 @@
 {
   "name": "@gateway-realtime/react",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "React hooks (useGateway/useChannel/usePresence) untuk Gateway Realtime.",
   "type": "module",
   "main": "./dist/index.js",
@@ -27,7 +27,7 @@
   },
   "publishConfig": { "access": "public" },
   "peerDependencies": {
-    "@gateway-realtime/sdk": "^0.2.0",
+    "@gateway-realtime/sdk": "^0.4.0",
     "react": ">=18"
   },
   "devDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@gateway-realtime/sdk",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "Client SDK TypeScript untuk Gateway Realtime — WebSocket pub/sub, channel private/presence, client events, history.",
   "type": "module",
   "main": "./dist/index.js",

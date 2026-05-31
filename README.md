@@ -1,10 +1,10 @@
 # 🚀 Gateway Realtime
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
-[![Tests](https://img.shields.io/badge/tests-28%2F28-brightgreen)]()
+[![Tests](https://img.shields.io/badge/tests-31%2F31-brightgreen)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)]()
 [![Go](https://img.shields.io/badge/Go-1.22%2B-00ADD8)]()
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)]()
+[![Version](https://img.shields.io/badge/version-0.4.0-blue)]()
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
 > 🇮🇩 [Bahasa Indonesia](./README.id.md)
