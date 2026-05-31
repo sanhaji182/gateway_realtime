@@ -84,6 +84,17 @@ High-level comparison (competitor features may change — verify before deciding
 
 REST & socket API documented in [`docs/openapi.yaml`](./docs/openapi.yaml) (OpenAPI 3.0).
 
+## Benchmarks
+
+Indicative numbers from [`scripts/loadtest.mjs`](./scripts/loadtest.mjs) — single node (local), 1 gateway + Redis:
+
+| Connections | Msgs/conn | Deliveries | Throughput | Latency p50 / p95 / p99 |
+|---|---|---|---|---|
+| 200 | 50 | 10,000 | ~79k msg/s | 2 / 4 / 10 ms |
+| 1,000 | 20 | 20,000 | ~118k msg/s | 8 / 16 / 19 ms |
+
+Reproduce (gateway + Redis harus jalan): `CONNS=1000 MSGS=20 node scripts/loadtest.mjs`. Angka bergantung hardware — bukan pengganti uji di lingkungan Anda sendiri.
+
 ## Prerequisites
 
 | Dependency | Version | Purpose |
