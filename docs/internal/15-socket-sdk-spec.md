@@ -9,7 +9,7 @@ Mendefinisikan kontrak SDK JavaScript yang dipakai aplikasi frontend untuk subsc
 ## Init
 ```js
 const gw = new GatewayClient({
-  key: 'pk_live_...',
+  key: 'pk_test_...',
   host: 'wss://gateway.internal',
   authEndpoint: '/api/socket/auth',
   autoReconnect: true,

@@ -7,9 +7,9 @@ export const apps: AppListItem[] = [
 ];
 
 export const details: Record<string, AppDetail> = {
-  app_a1b2c: { id: "app_a1b2c", name: "web-app", status: "active", key: "pk_live_a1b2c3", secret: null, allowed_origins: ["https://app.internal", "https://admin.app.internal"], webhook_endpoints: [{ id: "wh_1", url: "https://api.internal/hook", events: ["*"], status: "ok" }], created_at: "2026-01-01T00:00:00Z" },
-  app_ops: { id: "app_ops", name: "backend", status: "active", key: "pk_live_ops123", secret: null, allowed_origins: ["https://ops.internal"], webhook_endpoints: [{ id: "wh_2", url: "https://ops.internal/hook", events: ["alert.*"], status: "degraded" }], created_at: "2026-02-02T00:00:00Z" },
-  app_chat: { id: "app_chat", name: "mobile-app", status: "inactive", key: "pk_live_chat99", secret: null, allowed_origins: [], webhook_endpoints: [], created_at: "2026-03-01T00:00:00Z" }
+  app_a1b2c: { id: "app_a1b2c", name: "web-app", status: "active", key: "pk_test_a1b2c3", secret: null, allowed_origins: ["https://app.internal", "https://admin.app.internal"], webhook_endpoints: [{ id: "wh_1", url: "https://api.internal/hook", events: ["*"], status: "ok" }], created_at: "2026-01-01T00:00:00Z" },
+  app_ops: { id: "app_ops", name: "backend", status: "active", key: "pk_test_ops123", secret: null, allowed_origins: ["https://ops.internal"], webhook_endpoints: [{ id: "wh_2", url: "https://ops.internal/hook", events: ["alert.*"], status: "degraded" }], created_at: "2026-02-02T00:00:00Z" },
+  app_chat: { id: "app_chat", name: "mobile-app", status: "inactive", key: "pk_test_chat99", secret: null, allowed_origins: [], webhook_endpoints: [], created_at: "2026-03-01T00:00:00Z" }
 };
 
 export const stats: Record<string, AppStats & { traffic: TrafficPoint[] }> = Object.fromEntries(apps.map((app, appIndex) => [app.id, { peak_connections: { value: app.connections || 12, at: "2026-05-05T10:22:00Z" }, top_channels: [{ name: "events.#", event_count: 882 - appIndex * 80 }, { name: "notifications.#", event_count: 541 - appIndex * 40 }, { name: "alerts", event_count: 218 - appIndex * 20 }], traffic: Array.from({ length: 24 }).map((_, index) => ({ ts: Math.floor(Date.now() / 1000) - (23 - index) * 3600, value: 180 + Math.round(Math.sin(index / 3) * 35) + index * 3 + appIndex * 12 })) }])) as Record<string, AppStats & { traffic: TrafficPoint[] }>;

@@ -4,7 +4,7 @@ import { test } from "node:test";
 
 const auth = await import("../../dist-test/socket/auth.js");
 
-const credentials = { appId: "app_a1b2c", appKey: "pk_live_a1b2c3", appSecret: "sk_live_a1b2c3" };
+const credentials = { appId: "app_a1b2c", appKey: "pk_test_a1b2c3", appSecret: "sk_test_a1b2c3" };
 const user = { id: "u-881", name: "San Haji", role: "admin" };
 
 test("creates deterministic private channel signature", () => {

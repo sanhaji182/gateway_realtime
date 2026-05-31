@@ -3,9 +3,9 @@ import { getCurrentUser } from "@/lib/auth/session";
 import { createPresenceChannelData, createSocketAuthResponse, getChannelType, validateSocketAuthRequest, type SocketAppCredentials, type SocketAuthRequest } from "@/lib/socket";
 
 const demoApps: Record<string, SocketAppCredentials> = {
-  app_a1b2c: { appId: "app_a1b2c", appKey: "pk_live_a1b2c3", appSecret: "sk_live_a1b2c3" },
-  app_ops: { appId: "app_ops", appKey: "pk_live_ops123", appSecret: "sk_live_ops123" },
-  app_chat: { appId: "app_chat", appKey: "pk_live_chat99", appSecret: "sk_live_chat99" }
+  app_a1b2c: { appId: "app_a1b2c", appKey: "pk_test_a1b2c3", appSecret: "sk_test_a1b2c3" },
+  app_ops: { appId: "app_ops", appKey: "pk_test_ops123", appSecret: "sk_test_ops123" },
+  app_chat: { appId: "app_chat", appKey: "pk_test_chat99", appSecret: "sk_test_chat99" }
 };
 
 export async function POST(request: Request) {

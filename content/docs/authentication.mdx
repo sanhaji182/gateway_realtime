@@ -23,8 +23,8 @@ Setiap aplikasi terdaftar mendapat pasangan credentials:
 
 | Field  | Format | Contoh |
 |--------|--------|--------|
-| App Key | `pk_live_xxxxx` | `pk_live_a1b2c3` |
-| App Secret | `sk_live_xxxxx` | `sk_live_dev_secret_a1b2c3` |
+| App Key | `pk_test_xxxxx` | `pk_test_a1b2c3` |
+| App Secret | `sk_test_xxxxx` | `sk_test_dev_secret_a1b2c3` |
 
 ### 2. Generate Signature
 
@@ -62,7 +62,7 @@ sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
 
 ```bash
 POST /api/v1/events
-X-App-Key: pk_live_a1b2c3
+X-App-Key: pk_test_a1b2c3
 X-Signature: ab12cd34ef56...
 Content-Type: application/json
 

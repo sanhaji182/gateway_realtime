@@ -14,8 +14,8 @@ composer require gateway/gateway-php
 use Gateway\Client;
 
 $gw = new Client(
-    appKey:    'pk_live_xxx',   // From dashboard → App Detail
-    appSecret: 'sk_live_xxx',   // Keep this secret!
+    appKey:    'pk_test_xxx',   // From dashboard → App Detail
+    appSecret: 'sk_test_xxx',   // Keep this secret!
     baseUrl:   'https://gateway.internal/api/v1'
 );
 

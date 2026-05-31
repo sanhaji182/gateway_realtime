@@ -6,7 +6,7 @@ namespace Gateway;
  * Gateway PHP SDK — 5 lines to publish realtime events.
  *
  * Usage:
- *   $gw = new Gateway\Client('pk_live_xxx', 'sk_live_xxx', 'https://gateway.internal/api/v1');
+ *   $gw = new Gateway\Client('pk_test_xxx', 'sk_test_xxx', 'https://gateway.internal/api/v1');
  *   $gw->publish('orders.99', 'order.paid', ['order_id' => 99, 'amount' => 150000]);
  */
 class Client

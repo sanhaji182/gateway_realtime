@@ -10,7 +10,7 @@ Setiap request publish wajib menyertakan header:
 
 | Header | Value |
 |---|---|
-| `X-App-Key` | App key (contoh: `pk_live_a1b2c3`) |
+| `X-App-Key` | App key (contoh: `pk_test_a1b2c3`) |
 | `X-Signature` | `HMAC-SHA256(app-secret, request-body)` — hex encoded |
 
 ### Session Cookie (Dashboard)
@@ -119,7 +119,7 @@ Response: `AppStats` — includes `peak_connections`, `top_channels`.
 
 `POST /apps/:id/rotate-secret`
 
-Response: `{ "secret": "sk_live_new_secret" }`
+Response: `{ "secret": "sk_test_new_secret" }`
 
 ---
 

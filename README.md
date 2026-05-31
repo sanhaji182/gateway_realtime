@@ -129,6 +129,8 @@ curl -X POST http://localhost:3000/api/v1/events \
 | Admin | admin@gateway.local | password |
 | Viewer | viewer@gateway.local | password |
 
+> **ℹ️ Note on demo data** — Dashboard pages (Overview, Apps, Connections, Events, Webhooks, Settings) are served **sample/mock data** by the Next.js API routes under `app/api/v1/*` so the UI is explorable out of the box. The **realtime path is fully functional**: publishing via `POST /api/v1/events` fans out through Redis to live WebSocket subscribers. Wire the `/api/v1/*` routes to your own datastore to show live metrics.
+
 ## Routes
 
 | Path | Access | Description |

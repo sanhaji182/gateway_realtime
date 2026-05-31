@@ -50,7 +50,7 @@ test("computes reconnect backoff with 30s max", () => {
 
 test("connects and exposes socket id from system envelope", () => {
   MockWebSocket.instances = [];
-  const client = new sdk.GatewayClient({ key: "pk_live_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
+  const client = new sdk.GatewayClient({ key: "pk_test_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
   let connected;
   client.on("connected", (payload) => { connected = payload; });
   client.connect();
@@ -63,7 +63,7 @@ test("connects and exposes socket id from system envelope", () => {
 
 test("subscribes public channel and dispatches channel handlers", () => {
   MockWebSocket.instances = [];
-  const client = new sdk.GatewayClient({ key: "pk_live_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
+  const client = new sdk.GatewayClient({ key: "pk_test_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
   client.connect();
   const ws = MockWebSocket.instances[0];
   ws.open();
@@ -80,18 +80,18 @@ test("subscribes public channel and dispatches channel handlers", () => {
 
 test("uses auth payload for private channel subscriptions", async () => {
   MockWebSocket.instances = [];
-  const client = new sdk.GatewayClient({ key: "pk_live_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
+  const client = new sdk.GatewayClient({ key: "pk_test_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
   client.connect();
   const ws = MockWebSocket.instances[0];
   ws.open();
-  client.subscribe("private-orders.99", { auth: async () => ({ auth: "pk_live_...:sig", channel_data: null }) });
+  client.subscribe("private-orders.99", { auth: async () => ({ auth: "pk_test_...:sig", channel_data: null }) });
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.deepEqual(ws.sent.at(-1), { type: "subscribe", channel: "private-orders.99", auth: "pk_live_...:sig", channel_data: null });
+  assert.deepEqual(ws.sent.at(-1), { type: "subscribe", channel: "private-orders.99", auth: "pk_test_...:sig", channel_data: null });
 });
 
 test("tracks presence members from presence events", () => {
   MockWebSocket.instances = [];
-  const client = new sdk.GatewayClient({ key: "pk_live_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
+  const client = new sdk.GatewayClient({ key: "pk_test_...", host: "wss://gateway.internal", WebSocketImpl: MockWebSocket });
   const channel = client.subscribe("presence-room.1", { auth: () => ({ auth: "pk:sig", channel_data: { user_id: "u-1" } }) });
   channel.handleEvent("member_added", { user_id: "u-1", user_info: { name: "One" } });
   assert.equal(channel.count(), 1);

@@ -53,8 +53,8 @@ use Gateway\Client;
 
 $client = new Client(
     appId: 'app_a1b2c',
-    key:   'pk_live_...',
-    secret:'sk_live_...',
+    key:   'pk_test_...',
+    secret:'sk_test_...',
     host:  'https://gateway.internal'
 );
 
@@ -71,7 +71,7 @@ $client->publish(
 <script src="https://gateway.internal/sdk/gateway.js"></script>
 <script>
 const gw = new GatewayClient({
-  key:  'pk_live_...',
+  key:  'pk_test_...',
   host: 'wss://gateway.internal'
 })
 
@@ -115,7 +115,7 @@ Setiap app punya dua credential:
 Saat koneksi dibuat, gateway memvalidasi App Key:
 
 ```
-wss://gateway.internal/app/pk_live_a1b2c?version=1
+wss://gateway.internal/app/pk_test_a1b2c?version=1
 ```
 
 Untuk private channel, kirim auth token saat subscribe:
@@ -127,7 +127,7 @@ const channel = gw.subscribe('private-orders.99', {
       method: 'POST',
       body: JSON.stringify({ socket_id: gw.socketId, channel: 'private-orders.99' })
     })
-    return res.json() // { auth: "pk_live_...:sha256signature" }
+    return res.json() // { auth: "pk_test_...:sha256signature" }
   }
 })
 ```
@@ -149,7 +149,7 @@ Semua koneksi yang menggunakan secret lama akan ditolak saat reconnect.
 
 ```bash
 POST /api/v1/events/publish
-Authorization: Bearer sk_live_...
+Authorization: Bearer sk_test_...
 Content-Type: application/json
 
 {
@@ -217,7 +217,7 @@ npm install @internal/gateway-js
 
 ```js
 const gw = new GatewayClient({
-  key:  'pk_live_...',
+  key:  'pk_test_...',
   host: 'wss://gateway.internal',
   // opsional:
   authEndpoint: '/api/gateway-auth',

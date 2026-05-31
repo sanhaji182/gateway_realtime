@@ -20,8 +20,8 @@ use Gateway\Client;
 
 $client = new Client(
     appId: 'app_a1b2c',
-    key:   'pk_live_...',
-    secret:'sk_live_...',
+    key:   'pk_test_...',
+    secret:'sk_test_...',
     host:  'https://gateway.internal'
 );
 
@@ -38,7 +38,7 @@ $client->publish(
 <script src="https://gateway.internal/sdk/gateway.js"></script>
 <script>
 const gw = new GatewayClient({
-  key:  'pk_live_...',
+  key:  'pk_test_...',
   host: 'wss://gateway.internal'
 })
 

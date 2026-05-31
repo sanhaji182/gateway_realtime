@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import { APIParam } from "@/components/docs/APIParam";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
@@ -47,8 +48,8 @@ return [
       <h3>Step 2: Add to .env</h3>
       <CodeBlock language="bash" filename=".env">{`
 GATEWAY_APP_ID=app_a1b2c
-GATEWAY_KEY=pk_live_a1b2c3
-GATEWAY_SECRET=sk_live_xyz...
+GATEWAY_KEY=pk_test_a1b2c3
+GATEWAY_SECRET=sk_test_xyz...
 GATEWAY_HOST=http://localhost:3000
       `}</CodeBlock>
 
@@ -247,8 +248,8 @@ require_once __DIR__ . '/Client.php';
 
 $client = new \GatewaySDK\Client(
     appId:  'app_a1b2c',
-    key:    'pk_live_xxx',
-    secret: 'sk_live_xxx',
+    key:    'pk_test_xxx',
+    secret: 'sk_test_xxx',
     host:   'http://localhost:3000',
 );
 
@@ -499,8 +500,8 @@ require_once __DIR__ . '/Client.php';
 
 $client = new \GatewaySDK\Client(
     appId:  'app_a1b2c',
-    key:    'pk_live_xxx',
-    secret: 'sk_live_xxx',
+    key:    'pk_test_xxx',
+    secret: 'sk_test_xxx',
     host:   'http://localhost:3000',
 );
 
@@ -773,8 +774,8 @@ npm run dev
       <table>
         <thead><tr><th>Credential</th><th>Visibility</th><th>Used for</th></tr></thead>
         <tbody>
-          <tr><td>App Key (<code>pk_live_...</code>)</td><td>Public</td><td>Subscribe (frontend)</td></tr>
-          <tr><td>App Secret (<code>sk_live_...</code>)</td><td>Private</td><td>Publish (backend only)</td></tr>
+          <tr><td>App Key (<code>pk_test_...</code>)</td><td>Public</td><td>Subscribe (frontend)</td></tr>
+          <tr><td>App Secret (<code>sk_test_...</code>)</td><td>Private</td><td>Publish (backend only)</td></tr>
         </tbody>
       </table>
       <Callout type="warning">Never expose the App Secret in frontend code or git repositories. Use environment variables.</Callout>
@@ -906,8 +907,8 @@ use GatewaySDK\\Client;
 
 $client = new Client(
     appId:  'app_a1b2c',
-    key:    'pk_live_a1b2c3',
-    secret: 'sk_live_xyz...',
+    key:    'pk_test_a1b2c3',
+    secret: 'sk_test_xyz...',
     host:   'https://gateway.internal'
 );
 
@@ -1225,8 +1226,8 @@ use GatewaySDK\\Client;
 
 $client = new Client(
     appId:  'app_a1b2c',
-    key:    'pk_live_...',
-    secret: 'sk_live_...',
+    key:    'pk_test_...',
+    secret: 'sk_test_...',
     host:   'https://gateway.internal'
 );
 
@@ -1683,7 +1684,7 @@ upstream gateway_ws {
       <h2 id="app-secrets">App Secrets</h2>
       <p>Secrets are loaded from <code>GATEWAY_APP_SECRETS</code> environment variable. No secrets in the codebase.</p>
       <CodeBlock language="bash">{`
-GATEWAY_APP_SECRETS=app_id:pk_live_xxx:sk_live_yyy
+GATEWAY_APP_SECRETS=app_id:pk_test_xxx:sk_test_yyy
       `}</CodeBlock>
       <Callout type="warning">Never commit .env files. Rotate secrets immediately if exposed.</Callout>
       <h2 id="csrf">CSRF Protection</h2>

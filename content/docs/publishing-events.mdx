@@ -16,7 +16,7 @@ Setiap aplikasi terdaftar punya **app key** dan **app secret**. Backend kamu waj
 
 ```bash
 POST /api/v1/events
-X-App-Key: pk_live_a1b2c3
+X-App-Key: pk_test_a1b2c3
 X-Signature: <HMAC-SHA256(secret, request-body)>
 Content-Type: application/json
 
@@ -37,7 +37,7 @@ const body = JSON.stringify({
   event: "order.paid",
   data: { order_id: 99, amount: 150000 }
 });
-const sig = crypto.createHmac("sha256", "sk_live_your_secret").update(body).digest("hex");
+const sig = crypto.createHmac("sha256", "sk_test_your_secret").update(body).digest("hex");
 ```
 
 ```go
@@ -56,7 +56,7 @@ func sign(body string, secret string) string {
 ```php
 // PHP
 $body = json_encode(["channel" => "orders.99", "event" => "order.paid", "data" => [...]]);
-$sig = hash_hmac("sha256", $body, "sk_live_your_secret");
+$sig = hash_hmac("sha256", $body, "sk_test_your_secret");
 ```
 
 #### Option B: Session Cookie (Dashboard / Playground)
@@ -94,7 +94,7 @@ Kirim hingga 100 event dalam satu request.
 
 ```bash
 POST /api/v1/events/batch
-X-App-Key: pk_live_a1b2c3
+X-App-Key: pk_test_a1b2c3
 X-Signature: <HMAC-SHA256(secret, request-body)>
 Content-Type: application/json
 

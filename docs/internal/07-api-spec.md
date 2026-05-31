@@ -118,7 +118,7 @@ Query params: `search`, `status` (active|inactive), `sort` (name|connections|eve
 { "name": "my-app", "environment": "production" }
 
 // Response 201
-{ "data": { "id": "app_x9y8z", "name": "my-app", "key": "pk_live_...", "secret": "sk_live_..." } }
+{ "data": { "id": "app_x9y8z", "name": "my-app", "key": "pk_test_...", "secret": "sk_test_..." } }
 ```
 
 ### GET /api/apps/:id
@@ -128,7 +128,7 @@ Query params: `search`, `status` (active|inactive), `sort` (name|connections|eve
     "id": "app_a1b2c",
     "name": "marketplace",
     "status": "active",
-    "key": "pk_live_a1b2c3",
+    "key": "pk_test_a1b2c3",
     "secret": null,
     "allowed_origins": ["https://marketplace.internal"],
     "webhook_endpoints": [
@@ -148,13 +148,13 @@ Query params: `search`, `status` (active|inactive), `sort` (name|connections|eve
 ### POST /api/apps/:id/rotate-secret
 ```json
 // Response 200
-{ "data": { "secret": "sk_live_newvalue..." } }
+{ "data": { "secret": "sk_test_newvalue..." } }
 ```
 
 ### GET /api/apps/:id/secret
 ```json
 // Response 200 — hanya dipanggil saat user klik "Reveal"
-{ "data": { "secret": "sk_live_a1b2c3..." } }
+{ "data": { "secret": "sk_test_a1b2c3..." } }
 ```
 
 ### GET /api/apps/:id/stats

@@ -141,6 +141,8 @@ Auth in-memory via `lib/auth/session.ts`:
 | Admin  | admin@gateway.local  | password |
 | Viewer | viewer@gateway.local | password |
 
+> **ℹ️ Catatan data demo** — Halaman dashboard (Overview, Apps, Connections, Events, Webhooks, Settings) menampilkan **data contoh/mock** dari Next.js API routes di `app/api/v1/*` agar UI bisa langsung dijelajahi. **Jalur realtime sepenuhnya berfungsi**: publish via `POST /api/v1/events` di-fanout lewat Redis ke subscriber WebSocket. Sambungkan route `/api/v1/*` ke datastore Anda untuk menampilkan metrik live.
+
 ## Route Map
 
 | Route | Type | Description |
