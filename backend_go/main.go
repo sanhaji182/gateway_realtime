@@ -20,6 +20,7 @@ import (
 	"go-gateway/ratelimit"
 	"go-gateway/hub"
 	redisSub "go-gateway/redis"
+	"go-gateway/webhook"
 
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
@@ -66,6 +67,11 @@ func main() {
 	// Aktifkan presence & broadcast lintas-node lewat Redis (shared state + pub/sub).
 	presence := redisSub.Presence{Client: redisClient}
 	h.SetBroadcaster(presence)
+	// Webhook lifecycle (channel_occupied/vacated, member_added/removed) bila GATEWAY_WEBHOOKS diset.
+	if wh := webhook.NewDispatcher(redisClient); wh.Enabled() {
+		h.SetLifecycleHook(wh.Dispatch)
+		logger.Info().Msg("webhook lifecycle aktif (GATEWAY_WEBHOOKS)")
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	go (redisSub.Subscriber{Client: redisClient, Hub: h, Log: logger}).Run(ctx)
 	// Refresh TTL presence tiap 30 detik untuk channel yang masih aktif di node ini,

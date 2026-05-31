@@ -21,6 +21,18 @@ type Hub struct {
 	startedAt time.Time                            // Waktu service mulai untuk menghitung uptime health check.
 	log       zerolog.Logger                       // Logger Hub untuk error internal dan observability.
 	broadcaster Broadcaster                          // Opsional: distribusi presence & system event lintas-node. Nil = single-node.
+	onLifecycle func(event, channel string, data any) // Opsional: hook webhook lifecycle (occupied/vacated/member).
+}
+
+// SetLifecycleHook memasang callback untuk event lifecycle channel (untuk webhook).
+// event: channel_occupied, channel_vacated, member_added, member_removed.
+func (h *Hub) SetLifecycleHook(fn func(event, channel string, data any)) { h.onLifecycle = fn }
+
+// emitLifecycle memanggil hook lifecycle bila terpasang (aman bila nil).
+func (h *Hub) emitLifecycle(event, channel string, data any) {
+	if h.onLifecycle != nil {
+		h.onLifecycle(event, channel, data)
+	}
 }
 
 // Broadcaster mendistribusikan state presence dan system event lintas node (mis. via Redis).
@@ -137,6 +149,7 @@ func (h *Hub) Broadcast(payload []byte) {
 // Untuk presence, fungsi ini juga menyimpan member lalu mengirim state awal dan event join.
 func (h *Hub) JoinChannel(c *Client, channel string, member *PresenceMember) {
 	h.mu.Lock() // Write lock wajib karena channels, c.Channels, dan presence dimutasi bersamaan.
+	wasNew := h.channels[channel] == nil // channel baru pertama kali ada subscriber (occupied)
 	if h.channels[channel] == nil {
 		h.channels[channel] = map[string]*Client{}
 	}
@@ -156,6 +169,10 @@ func (h *Hub) JoinChannel(c *Client, channel string, member *PresenceMember) {
 		}
 	}
 	h.mu.Unlock()
+	// Webhook lifecycle: channel pertama kali terisi (per-node-local).
+	if wasNew {
+		h.emitLifecycle("channel_occupied", channel, nil)
+	}
 	// Event dikirim setelah unlock agar write ke channel client tidak terjadi saat mutex Hub dipegang.
 	if isPresence {
 		if h.broadcaster != nil {
@@ -164,6 +181,7 @@ func (h *Hub) JoinChannel(c *Client, channel string, member *PresenceMember) {
 		}
 		h.sendSystem(c, channel, "subscription_succeeded", map[string]any{"members": members, "count": len(members)})
 		h.broadcastSystem(channel, "member_added", member)
+		h.emitLifecycle("member_added", channel, member) // webhook
 		return
 	}
 	h.sendSystem(c, channel, "subscription_succeeded", map[string]any{"channel": channel})
@@ -173,11 +191,13 @@ func (h *Hub) JoinChannel(c *Client, channel string, member *PresenceMember) {
 // Dipanggil dari unsubscribe eksplisit maupun cleanup disconnect.
 func (h *Hub) LeaveChannel(c *Client, channel string) {
 	var removed *PresenceMember
+	becameEmpty := false
 	h.mu.Lock() // Write lock karena channels, c.Channels, dan presence dimutasi.
 	if clients := h.channels[channel]; clients != nil {
 		delete(clients, c.SocketID)
 		if len(clients) == 0 {
 			delete(h.channels, channel)
+			becameEmpty = true // subscriber terakhir keluar (vacated)
 		}
 	}
 	delete(c.Channels, channel)
@@ -202,6 +222,11 @@ func (h *Hub) LeaveChannel(c *Client, channel string) {
 	// Broadcast leave setelah unlock untuk menghindari deadlock saat SendToChannel mengambil RLock.
 	if removed != nil {
 		h.broadcastSystem(channel, "member_removed", removed)
+		h.emitLifecycle("member_removed", channel, removed) // webhook
+	}
+	// Webhook lifecycle: channel kosong (per-node-local).
+	if becameEmpty {
+		h.emitLifecycle("channel_vacated", channel, nil)
 	}
 }
 
