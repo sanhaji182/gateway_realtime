@@ -1,5 +1,51 @@
 # Changelog
 
+## v0.4.0 — 2026-05-31
+
+> Rilis besar: pematangan produksi + fitur realtime + ekosistem SDK. Seluruh perubahan di repo open-source `gateway`.
+
+### Added — Fitur realtime
+- **Message history / replay** — event disimpan ber-cap di Redis (`history:<channel>`); WS `{type:"history"}` dan SDK `channel.history(count, after?)`. Env: `HISTORY_MAX`, `HISTORY_TTL`.
+- **Resume-on-reconnect** — opsi subscribe `{ resume: true }`; setelah reconnect, SDK otomatis me-replay event yang terlewat (berbasis history + ts terakhir).
+- **Client events** — `channel.trigger("client-...", data)` pada channel private/presence (fan-out lintas-node, ber-rate-limit).
+- **Encrypted channels (E2E)** — channel `private-encrypted-*`, payload AES-256-GCM; kunci HKDF dari shared secret + nama channel; auto-dekripsi via opsi `encryptionKey`.
+- **Presence lintas-node** — state presence dibagikan via Redis + TTL anti-orphan (refresh periodik).
+- **Webhook delivery nyata** — kirim event ke endpoint (`GATEWAY_WEBHOOKS`) dengan HMAC `X-Gateway-Signature` + retry + log; **event lifecycle** `channel_occupied`/`channel_vacated`, `member_added`/`member_removed`.
+- **Isolasi multi-app (opsional)** — klaim JWT `app` membatasi koneksi ke namespace channel app-nya (backward-compatible).
+- **Kompatibilitas protokol Pusher (subset)** — endpoint `/app/{key}`; klien `pusher-js` bisa connect (handshake, subscribe/unsubscribe/ping, envelope event).
+- **Rate limit per-koneksi** — token bucket anti-flood (`MSG_RATE_PER_SEC`, `MSG_BURST`).
+
+### Added — Observability, SDK, deployment
+- **Observability** — endpoint `/stats` (terproteksi JWT admin) untuk koneksi & channel nyata; `/metrics` format Prometheus (`gateway_connections`, `gateway_channels`, `gateway_uptime_seconds`).
+- **Paket npm** — `@gateway-realtime/sdk` (SDK TS) dan `@gateway-realtime/react` (hooks `useGateway`/`useChannel`/`usePresence`) + workflow publish npm.
+- **Deployment** — workflow build & push image ke GHCR (tag `v*`), `docker-compose.prod.yml`, manifest Kubernetes (`deploy/k8s/`).
+- **OpenAPI** — `docs/openapi.yaml` (OpenAPI 3.0) + tabel perbandingan vs Pusher/Soketi/Ably di README.
+- **Docs portal** — Framework Guides (CodeIgniter 4, Laravel), Bring Your Own JWT, Pusher Compatibility, Encrypted Channels, React Hooks, Reliability.
+
+### Changed
+- **Dashboard pakai data nyata** — Connections, Overview, Events, Apps, Webhooks membaca data live (fallback demo bila gateway/Redis tidak tersedia).
+- **Auth dashboard configurable** — admin via `GATEWAY_ADMIN_EMAIL`/`GATEWAY_ADMIN_PASSWORD`; akun viewer demo dimatikan di mode produksi.
+- **Rate limit IP & ping** configurable via env (`RATE_LIMIT_RPS`, `RATE_LIMIT_BURST`, `PING_INTERVAL`).
+
+### Fixed
+- **Wildcard fan-out** — publish ke channel konkret kini benar sampai ke subscriber pola `x.*` tanpa over-match.
+- **Derivasi kunci encrypted channel** — bergantung pada shared secret + nama channel (sebelumnya hanya nama channel).
+
+### Security
+- 🔴 `/api/socket/token` wajib sesi login; role diambil dari sesi (bukan `admin` untuk semua).
+- 🟡 JWT di-pin ke `alg: HS256` (cegah alg-confusion).
+- 🟡 Prefix kunci demo `pk_live_`/`sk_live_` → `pk_test_`/`sk_test_`.
+
+### Tests / CI
+- `go test -race ./...` + integration test Redis fan-out (service redis di CI) + benchmark fan-out.
+- Cakupan test Go: `auth`, `handler`, `hub`, `ratelimit`; socket SDK 31/31.
+
+### Env vars baru
+`MSG_RATE_PER_SEC`, `MSG_BURST`, `RATE_LIMIT_RPS`, `RATE_LIMIT_BURST`, `HISTORY_MAX`, `HISTORY_TTL`, `GATEWAY_WEBHOOKS`, `GATEWAY_APP_SECRETS`, `GATEWAY_ADMIN_EMAIL`, `GATEWAY_ADMIN_PASSWORD`, `GATEWAY_INTERNAL_URL`.
+
+### Catatan upgrade
+- Multi-node: `channel_occupied`/`channel_vacated` dihitung per-node-local (bisa terkirim >1 di multi-node). Kompat Pusher untuk channel private/presence memakai `JWT_SECRET` (bukan app-secret Pusher).
+
 ## v0.3.1 — 2026-05-12
 
 ## v0.3.2 — 2026-05-12
