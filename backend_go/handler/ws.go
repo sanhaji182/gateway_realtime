@@ -78,6 +78,7 @@ func (h WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	socketID := newSocketID()
 	client := hub.NewClient(h.Hub, conn, claims.UserID, claims.Role, socketID, h.Log)
+	client.AppID = claims.AppID // isolasi multi-app (opsional; kosong = global)
 	client.EnableRateLimit(h.Config.MsgRate, h.Config.MsgBurst) // anti-flood pesan masuk per koneksi
 	h.Hub.Register(client)
 	client.SendSystem("connected", map[string]any{"socketId": socketID})
@@ -202,6 +203,11 @@ func (h WSHandler) subscribe(c *hub.Client, channel, authSig string, channelData
 		c.SendSystem("subscription_error", map[string]any{"channel": channel, "code": "INVALID_CHANNEL"})
 		return
 	}
+	// Isolasi multi-app: koneksi ber-app hanya boleh subscribe channel namespace app-nya.
+	if !channelInApp(c.AppID, channel) {
+		c.SendSystem("subscription_error", map[string]any{"channel": channel, "code": "FORBIDDEN_APP", "message": "Channel di luar namespace app"})
+		return
+	}
 	if strings.Contains(channel, "*") && c.Role != "admin" {
 		c.SendSystem("subscription_error", map[string]any{"channel": channel, "code": "FORBIDDEN"})
 		return
@@ -230,6 +236,23 @@ func (h WSHandler) subscribe(c *hub.Client, channel, authSig string, channelData
 
 func validChannel(channel string) bool {
 	return len(channel) > 0 && len(channel) <= 100 && channelNameRe.MatchString(channel)
+}
+
+// channelInApp memeriksa apakah channel berada dalam namespace app (isolasi multi-app).
+// appID kosong = tanpa isolasi (backward-compatible). Jika ada, channel (setelah strip
+// prefix private-/presence-/private-encrypted-) harus sama dengan appID atau berawalan "appID.".
+func channelInApp(appID, channel string) bool {
+	if appID == "" {
+		return true
+	}
+	base := channel
+	for _, p := range []string{"private-encrypted-", "private-", "presence-"} {
+		if strings.HasPrefix(base, p) {
+			base = strings.TrimPrefix(base, p)
+			break
+		}
+	}
+	return base == appID || strings.HasPrefix(base, appID+".")
 }
 
 func verifyAuth(secret, socketID, channel string, channelData []byte, provided string) bool {

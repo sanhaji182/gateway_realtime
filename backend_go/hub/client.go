@@ -22,6 +22,7 @@ type Client struct {
 	Send     chan []byte     // Queue outbound agar goroutine lain tidak menulis langsung ke Conn.
 	UserID   string          // Identitas user hasil validasi JWT untuk routing notif personal.
 	Role     string          // Role user dari JWT, dipakai untuk membatasi wildcard/admin channel.
+	AppID    string          // Opsional: id app untuk isolasi multi-app channel. Kosong = tanpa isolasi.
 	SocketID string          // Identitas unik per koneksi, dipakai pada signature private/presence channel.
 	Channels map[string]bool // Daftar channel yang diikuti socket ini untuk cleanup saat disconnect.
 	ConnectedAt time.Time     // Waktu koneksi diterima, dipakai untuk observability/stats.

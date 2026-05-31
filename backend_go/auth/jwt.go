@@ -18,6 +18,7 @@ import (
 type Claims struct {
 	UserID string // Identitas user untuk mapping Hub dan Redis notif.{userId}.
 	Role   string // Role opsional untuk membatasi wildcard channel admin.
+	AppID  string // Opsional: id app untuk isolasi multi-app (klaim "app"/"app_id"). Kosong = tanpa isolasi.
 }
 
 // ValidateToken memvalidasi JWT HMAC SHA-256 dan mengekstrak user id serta role.
@@ -71,7 +72,7 @@ func ValidateToken(token, secret string) (Claims, error) {
 		// Gateway membutuhkan user id untuk routing Redis ke koneksi WebSocket.
 		return Claims{}, errors.New("jwt missing user id")
 	}
-	return Claims{UserID: userID, Role: firstString(payload, "role")}, nil
+	return Claims{UserID: userID, Role: firstString(payload, "role"), AppID: firstString(payload, "app", "app_id")}, nil
 }
 
 // firstString mengambil string pertama yang tersedia dari beberapa nama claim.

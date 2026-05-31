@@ -44,6 +44,28 @@ func TestVerifyAuth(t *testing.T) {
 	}
 }
 
+func TestChannelInApp(t *testing.T) {
+	// Tanpa app → semua channel diizinkan (backward-compatible).
+	for _, ch := range []string{"orders", "other.x", "private-foo", "presence-room"} {
+		if !channelInApp("", ch) {
+			t.Errorf("appID kosong harus mengizinkan %q", ch)
+		}
+	}
+	// Dengan app "acme" → hanya namespace acme.
+	ok := []string{"acme", "acme.orders", "acme.orders.99", "private-acme.x", "presence-acme.room", "private-encrypted-acme.s"}
+	for _, ch := range ok {
+		if !channelInApp("acme", ch) {
+			t.Errorf("app acme harus mengizinkan %q", ch)
+		}
+	}
+	deny := []string{"other", "other.x", "acmex", "private-other.x", "presence-other"}
+	for _, ch := range deny {
+		if channelInApp("acme", ch) {
+			t.Errorf("app acme harus menolak %q", ch)
+		}
+	}
+}
+
 func TestNewSocketID(t *testing.T) {
 	a, b := newSocketID(), newSocketID()
 	if !strings.HasPrefix(a, "ws_") {
