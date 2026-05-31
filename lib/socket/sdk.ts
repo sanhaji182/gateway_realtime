@@ -85,6 +85,12 @@ export class GatewayChannel {
     this.client.requestHistory(this.name, count);
   }
 
+  // trigger mengirim client event (nama harus diawali "client-") ke channel ini.
+  // Hanya berlaku untuk channel private/presence yang sudah di-subscribe.
+  trigger(event: string, data: unknown) {
+    this.client.triggerClientEvent(this.name, event, data);
+  }
+
   members() {
     return Array.from(this.memberMap.values());
   }
@@ -182,6 +188,12 @@ export class GatewayClient {
   // Server membalas event "history" yang diteruskan ke handler channel terkait.
   requestHistory(channelName: string, count = 50) {
     this.send({ type: "history", channel: channelName, count });
+  }
+
+  // triggerClientEvent mengirim client event ke server untuk diteruskan ke
+  // subscriber lain. Nama event harus diawali "client-" (divalidasi di server).
+  triggerClientEvent(channelName: string, event: string, data: unknown) {
+    this.send({ type: "client_event", channel: channelName, event, data });
   }
 
   bind(eventName: string, handler: ChannelEventHandler) {

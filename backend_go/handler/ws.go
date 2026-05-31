@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"regexp"
 	"strings"
+	"time"
 
 	gwAuth "go-gateway/auth"
 	"go-gateway/config"
@@ -44,6 +45,8 @@ type inboundMessage struct {
 	Auth        string          `json:"auth"`
 	ChannelData json.RawMessage `json:"channel_data"`
 	Count       int             `json:"count"` // jumlah pesan history yang diminta
+	Event       string          `json:"event"` // nama event untuk client event
+	Data        json.RawMessage `json:"data"`  // payload client event
 }
 
 func (h WSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -104,9 +107,46 @@ func (h WSHandler) handleMessage(c *hub.Client, payload []byte) {
 		c.SendSystem("heartbeat", map[string]any{"socketId": c.SocketID})
 	case "history":
 		h.history(c, channel, msg.Count)
+	case "client_event":
+		h.clientEvent(c, channel, msg.Event, msg.Data)
 	default:
 		c.SendSystem("error", map[string]any{"code": "PROTOCOL_ERROR", "message": "Unknown message type"})
 	}
+}
+
+// clientEvent menangani event client→client (mis. indikator "sedang mengetik").
+// Aturan (mirip Pusher): hanya channel private/presence, nama event harus diawali "client-",
+// dan pengirim harus sudah subscribe. Event di-fanout ke semua node lewat Redis events.<channel>.
+func (h WSHandler) clientEvent(c *hub.Client, channel, event string, data json.RawMessage) {
+	if h.Redis == nil { // butuh Redis untuk fanout lintas node.
+		return
+	}
+	if !validChannel(channel) || !(strings.HasPrefix(channel, "private-") || strings.HasPrefix(channel, "presence-")) {
+		c.SendSystem("error", map[string]any{"code": "FORBIDDEN", "message": "Client event hanya untuk channel private/presence"})
+		return
+	}
+	if !strings.HasPrefix(event, "client-") || len(event) > 100 {
+		c.SendSystem("error", map[string]any{"code": "INVALID_EVENT", "message": "Nama client event harus diawali 'client-'"})
+		return
+	}
+	if !h.Hub.IsSubscribed(channel, c.SocketID) {
+		c.SendSystem("error", map[string]any{"code": "FORBIDDEN", "message": "Subscribe ke channel dulu sebelum mengirim client event"})
+		return
+	}
+	if !h.RateLimiter.Allow("", "client_event", 100) {
+		c.SendSystem("error", map[string]any{"code": "RATE_LIMITED", "message": "Terlalu banyak client event"})
+		return
+	}
+	if len(data) == 0 {
+		data = json.RawMessage("null")
+	}
+	// meta.socket_id menandai pengirim agar konsumen bisa mengabaikan event-nya sendiri bila perlu.
+	envelope, _ := json.Marshal(hub.EventEnvelope{
+		Type: "event", Channel: channel, Event: event, Data: data,
+		TS: time.Now().UnixMilli(), Meta: map[string]any{"socket_id": c.SocketID},
+	})
+	h.Redis.Publish(context.Background(), "events."+channel, envelope)
+	h.EventHook.OnPublish("", channel, event, int64(len(data)))
 }
 
 // history mengirim ulang (replay) beberapa pesan terakhir pada sebuah channel.
