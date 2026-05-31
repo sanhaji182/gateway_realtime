@@ -1,0 +1,23 @@
+# Dependabot — update dependency mingguan untuk semua ekosistem di repo.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/" # dashboard Next.js
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/sdk/js"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/sdk/react"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/backend_go"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
