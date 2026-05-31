@@ -28,7 +28,7 @@ export const webhookLogs: WebhookLogDetail[] = Array.from({ length: 64 }).map((_
     request: {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Gateway-Signature": `sha256=${index}abc123` },
-      body: { event: events[index % events.length], id: `evt_${index}`, data: { order_id: 123 + index, amount: 150000 } }
+      body: { event: events[index % events.length], id: `evt_${index}`, data: { id: 123 + index, value: 100 } }
     },
     response: status === "failed" && index % 2 === 0 ? null : { status: httpCode, body: status === "success" ? "ok" : "service unavailable", latency_ms: 120 + index * 4 },
     error: status === "success" ? null : status === "retrying" ? "Endpoint returned 503 Service Unavailable; retry scheduled." : "Request timed out while waiting for endpoint response.",

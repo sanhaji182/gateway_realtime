@@ -100,7 +100,7 @@ Query params: `search`, `status` (active|inactive), `sort` (name|connections|eve
   "data": [
     {
       "id": "app_a1b2c",
-      "name": "marketplace",
+      "name": "web-app",
       "status": "active",
       "connections": 284,
       "events_today": 12481,
@@ -126,11 +126,11 @@ Query params: `search`, `status` (active|inactive), `sort` (name|connections|eve
 {
   "data": {
     "id": "app_a1b2c",
-    "name": "marketplace",
+    "name": "web-app",
     "status": "active",
     "key": "pk_test_a1b2c3",
     "secret": null,
-    "allowed_origins": ["https://marketplace.internal"],
+    "allowed_origins": ["https://web-app.internal"],
     "webhook_endpoints": [
       { "id": "wh_1", "url": "https://api.internal/hook", "events": ["*"], "status": "ok" }
     ],
@@ -197,7 +197,7 @@ Query params: `app_id`, `state` (live|idle), `channel`, `search`, `page`, `per_p
     {
       "socket_id": "ws_a1b2c3",
       "app_id": "app_a1b2c",
-      "app_name": "marketplace",
+      "app_name": "web-app",
       "user_id": "u-881",
       "ip": "10.0.1.4",
       "channels": ["orders.99","chat.55"],
@@ -241,7 +241,7 @@ Query params: `app_id`, `channel`, `event`, `status` (ok|error), `range` (30m|1h
     {
       "id": "evt_001",
       "app_id": "app_a1b2c",
-      "app_name": "marketplace",
+      "app_name": "web-app",
       "channel": "orders.99",
       "event": "order.paid",
       "source": "ci4-api",
@@ -284,7 +284,7 @@ Query params: `app_id`, `endpoint`, `status` (success|failed|retrying), `range`,
     {
       "id": "whl_551",
       "app_id": "app_a1b2c",
-      "app_name": "marketplace",
+      "app_name": "web-app",
       "endpoint_url": "https://api.internal/hook",
       "event": "order.paid",
       "status": "success",

@@ -14,7 +14,7 @@ export const eventDetails: EventDetail[] = Array.from({ length: 86 }).map((_, in
   const event = eventNames[index % eventNames.length];
   const status: EventStatus = index % 11 === 0 ? "error" : "ok";
   const publishedAt = new Date(Date.now() - index * 4 * 60 * 1000 - index * 832).toISOString();
-  const payload = { order_id: 123 + index, status: status === "ok" ? "paid" : "failed", amount: 150000 + index * 2500, currency: "IDR", buyer_id: `u-${881 + index}` };
+  const payload = { id: 1000 + index, status, bytes: 280 + index * 17, ref: `ref_${881 + index}` };
 
   return {
     id: `evt_${String(index + 1).padStart(3, "0")}`,

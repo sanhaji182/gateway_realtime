@@ -48,7 +48,7 @@ Submit → POST /api/apps → refresh table → tampilkan toast success.
 
 ### Layout
 ```
-[TopBar: breadcrumb "Apps / marketplace"]
+[TopBar: breadcrumb "Apps / web-app"]
 [App Header: nama + badge status + app_id + action buttons]
 ─────────────────────────────────────────────────────────
 [Left col 35%]         [Right col 65%]
