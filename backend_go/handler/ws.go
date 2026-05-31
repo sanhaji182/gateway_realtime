@@ -10,6 +10,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -154,6 +155,19 @@ func (h WSHandler) clientEvent(c *hub.Client, channel, event string, data json.R
 		TS: time.Now().UnixMilli(), Meta: map[string]any{"socket_id": c.SocketID},
 	})
 	h.Redis.Publish(context.Background(), "events."+channel, envelope)
+	// Catat ke events:recent agar client event muncul di halaman Events dashboard.
+	// Ditulis sekali di sisi pengirim (node ini), jadi tidak terduplikasi antar node.
+	now := time.Now()
+	recent, _ := json.Marshal(map[string]any{
+		"id": fmt.Sprintf("evt_%d", now.UnixNano()), "app_id": "", "app_name": "",
+		"channel": channel, "event": event, "source": "client", "size_bytes": len(data),
+		"status": "ok", "request_id": fmt.Sprintf("req_%d", now.UnixNano()),
+		"published_at": now.UTC().Format(time.RFC3339),
+	})
+	ctx := context.Background()
+	h.Redis.LPush(ctx, "events:recent", recent)
+	h.Redis.LTrim(ctx, "events:recent", 0, 199)
+	h.Redis.Expire(ctx, "events:recent", 86400)
 	h.EventHook.OnPublish("", channel, event, int64(len(data)))
 }
 
