@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"strconv"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -124,5 +125,24 @@ func TestSnapshotAndLeave(t *testing.T) {
 	h.LeaveChannel(a, "orders")
 	if h.Snapshot().TotalChannels != 0 {
 		t.Fatal("channel harus hilang setelah leave terakhir")
+	}
+}
+
+// BenchmarkSendToChannel mengukur throughput fan-out ke banyak subscriber.
+func BenchmarkSendToChannel(b *testing.B) {
+	h := New(zerolog.Nop())
+	for i := 0; i < 100; i++ {
+		c := testClient(h, "u"+strconv.Itoa(i), "s"+strconv.Itoa(i), "user")
+		h.Register(c)
+		h.JoinChannel(c, "bench", nil)
+		go func(c *Client) { // buang antrian agar buffer tidak penuh
+			for range c.Send {
+			}
+		}(c)
+	}
+	payload := []byte(`{"type":"event","channel":"bench","event":"x","data":{}}`)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.SendToChannel("bench", payload)
 	}
 }
