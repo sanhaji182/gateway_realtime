@@ -19,29 +19,20 @@ function getCrypto(): typeof globalThis.crypto {
   }
 }
 
-// Derive a shared secret using ECDH for encrypted channels
+// Derive kunci AES-GCM per-channel dari shared secret memakai HKDF.
+// Kunci bergantung pada DUA hal: shared secret (rahasia) sebagai input keying material,
+// dan nama channel sebagai info — sehingga tiap channel punya kunci berbeda.
 export async function generateSharedSecret(
   channelName: string,
   keyBase64: string
 ): Promise<CryptoKey> {
   const crypto = getCrypto();
   const encoder = new TextEncoder();
-  const keyData = encoder.encode(keyBase64);
-  const channelData = encoder.encode(channelName);
 
-  // Import as raw AES key material
+  // Shared secret menjadi input keying material HKDF (bukan nama channel).
   const baseKey = await crypto.subtle.importKey(
     "raw",
-    keyData,
-    { name: "AES-GCM" },
-    false,
-    ["encrypt", "decrypt"]
-  );
-
-  // Derive channel-specific key using HKDF
-  const derivedKey = await crypto.subtle.importKey(
-    "raw",
-    await crypto.subtle.digest("SHA-256", channelData),
+    encoder.encode(keyBase64),
     { name: "HKDF" },
     false,
     ["deriveKey"]
@@ -52,9 +43,9 @@ export async function generateSharedSecret(
       name: "HKDF",
       hash: "SHA-256",
       salt: new Uint8Array(0),
-      info: encoder.encode("encrypted-channel"),
+      info: encoder.encode(channelName), // info = nama channel → kunci unik per channel
     },
-    derivedKey,
+    baseKey,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt", "decrypt"]

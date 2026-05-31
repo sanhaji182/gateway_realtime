@@ -1,4 +1,5 @@
 import { getChannelType, isEncryptedChannel, validateChannelName } from "./channels";
+import { generateSharedSecret, decryptPayload } from "./encryption";
 import { parseSocketEnvelope, type SocketEnvelope } from "./events";
 
 export type GatewayClientState = "idle" | "connecting" | "connected" | "disconnected" | "reconnecting";
@@ -20,6 +21,8 @@ export type SubscribeOptions = {
   auth?: () => Promise<Response | SocketAuthPayload> | Response | SocketAuthPayload;
   // resume: saat reconnect, otomatis ambil & replay event yang terlewat (pakai history + ts terakhir).
   resume?: boolean;
+  // encryptionKey: shared secret untuk channel "private-encrypted-*" (auto-dekripsi payload).
+  encryptionKey?: string;
 };
 
 export type SocketAuthPayload = {
@@ -51,6 +54,8 @@ export class GatewayChannel {
   options?: SubscribeOptions;
   // Timestamp event terakhir yang diterima — dipakai untuk resume-on-reconnect.
   lastEventTs = 0;
+  // Kunci AES turunan untuk channel terenkripsi (private-encrypted-*); diisi lazy saat subscribe.
+  encKey?: Promise<CryptoKey>;
 
   constructor(client: GatewayClient, name: string, options?: SubscribeOptions) {
     this.client = client;
@@ -180,6 +185,10 @@ export class GatewayClient {
     if (existing) return existing;
 
     const channel = new GatewayChannel(this, channelName, options);
+    // Channel terenkripsi: turunkan kunci AES dari shared secret untuk auto-dekripsi.
+    if (isEncryptedChannel(channelName) && options?.encryptionKey) {
+      channel.encKey = generateSharedSecret(channelName, options.encryptionKey);
+    }
     this.channels.set(channelName, channel);
     void this.sendSubscribe(channel);
     return channel;
@@ -368,9 +377,25 @@ export class GatewayClient {
     const channel = this.channels.get(envelope.channel);
     // Lacak ts terakhir untuk resume-on-reconnect.
     if (channel && typeof envelope.ts === "number") channel.lastEventTs = envelope.ts;
+    // Channel terenkripsi: dekripsi payload {ciphertext, iv} sebelum dispatch.
+    if (channel?.encKey && isEncryptedPayload(envelope.data)) {
+      void this.dispatchEncrypted(channel, envelope.event, envelope.data);
+      return;
+    }
     channel?.handleEvent(envelope.event, envelope.data);
     this.globalHandlers.get(envelope.event)?.forEach((handler) => safeCall(handler, envelope.data));
     this.globalHandlers.get("*")?.forEach((handler) => safeCall(handler, envelope.event, envelope.data));
+  }
+
+  // dispatchEncrypted mendekripsi payload channel terenkripsi lalu mem-forward plaintext.
+  private async dispatchEncrypted(channel: GatewayChannel, event: string, data: { ciphertext: string; iv: string }) {
+    try {
+      const key = await channel.encKey!;
+      const plain = await decryptPayload(key, data.ciphertext, data.iv);
+      channel.handleEvent(event, JSON.parse(plain));
+    } catch {
+      this.emitLifecycle("error", { code: "DECRYPT_FAILED", message: `Gagal mendekripsi pesan di ${channel.name}` });
+    }
   }
 
   private send(payload: Record<string, unknown>) {
@@ -400,6 +425,11 @@ export function parseEnvelope(raw: unknown): GatewayEnvelope {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+// isEncryptedPayload: cek apakah data berbentuk { ciphertext, iv } (hasil enkripsi).
+function isEncryptedPayload(value: unknown): value is { ciphertext: string; iv: string } {
+  return isRecord(value) && typeof value.ciphertext === "string" && typeof value.iv === "string";
 }
 
 function isPresenceMember(value: unknown): value is PresenceMember {
