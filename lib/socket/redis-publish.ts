@@ -1,35 +1,17 @@
 // Redis publisher — jembatan REST API Next.js ke pub/sub Go gateway.
-// Hanya aktif jika env REDIS_URL diset.
 // Selain publish, setiap event juga disimpan ke "history:<channel>" (list ber-cap)
 // agar client bisa me-replay pesan terakhir lewat fitur message history.
 
-import type { Redis } from "ioredis";
-
-let publisher: Redis | null = null;
+import { getRedis } from "@/lib/redis-client";
 
 // Maksimum pesan history yang disimpan per channel (configurable via env).
 const HISTORY_MAX = Number(process.env.HISTORY_MAX || 50);
 // TTL history (detik) — default 24 jam agar Redis tidak menumpuk selamanya.
 const HISTORY_TTL = Number(process.env.HISTORY_TTL || 86400);
 
-async function getPublisher(): Promise<Redis | null> {
-  if (publisher) return publisher;
-  const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
-  try {
-    // Dynamic import — hanya dimuat saat dibutuhkan.
-    const { Redis } = await import("ioredis");
-    const client = new Redis(redisUrl, { lazyConnect: true, maxRetriesPerRequest: 1 });
-    await client.connect();
-    publisher = client;
-    return publisher;
-  } catch {
-    return null;
-  }
-}
-
 export async function publishToRedis(channel: string, event: string, data: unknown): Promise<boolean> {
   try {
-    const pub = await getPublisher();
+    const pub = await getRedis();
     if (!pub) return false;
     const message = JSON.stringify({
       type: "event",

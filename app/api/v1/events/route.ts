@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyCsrfToken } from "@/lib/csrf";
 import { createEventEnvelope, validateEventEnvelope, validateEventName } from "@/lib/socket/events";
 import { publishToRedis } from "@/lib/socket/redis-publish";
+import { dispatchWebhooks } from "@/lib/webhooks";
 import { findAppByKey, verifyPublishSignature } from "@/lib/auth/app-credentials";
 import { listEvents } from "@/app/api/v1/events/data";
 
@@ -70,6 +71,8 @@ export async function POST(request: NextRequest) {
     }
 
     const published = await publishToRedis(channel, event, dataPayload);
+    // Kirim event ke webhook terkonfigurasi (env GATEWAY_WEBHOOKS) — sekali di sisi publisher.
+    await dispatchWebhooks(channel, event, dataPayload);
     return NextResponse.json(
       published ? {} : { warning: "accepted, redis unavailable" },
       { status: published ? 200 : 202 }
