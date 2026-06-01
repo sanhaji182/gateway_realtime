@@ -1105,35 +1105,41 @@ lobby.on('member_removed', (member) => {
     toc: [
       { id: "overview", title: "Overview" },
       { id: "configuration", title: "Configuration" },
+      { id: "lifecycle", title: "Lifecycle Events" },
       { id: "payload", title: "Payload" },
       { id: "signature-verification", title: "Signature Verification" },
-      { id: "retry-policy", title: "Retry Policy" },
+      { id: "delivery", title: "Delivery & Retry" },
       { id: "monitoring", title: "Monitoring" },
     ],
     render: () => (<>
       <h2 id="overview">Overview</h2>
       <p>Webhooks let Gateway send HTTP POST requests to your backend every time a matching event is published. Use cases: logging, triggering background jobs, service-to-service notifications.</p>
       <h2 id="configuration">Configuration</h2>
-      <p>Dashboard → Apps → [select app] → <strong>Webhook Endpoints</strong> → Add endpoint.</p>
+      <p>Webhook dikonfigurasi via env <code>GATEWAY_WEBHOOKS</code> (JSON array). Setiap entri: <code>url</code>, <code>events</code> (pola), dan <code>secret</code> (untuk signature).</p>
+      <CodeBlock language="bash">{`
+GATEWAY_WEBHOOKS='[{"url":"https://api.internal/hook","events":["*"],"secret":"whsec_xxx"}]'
+      `}</CodeBlock>
       <ul>
-        <li><strong>URL</strong>: Your backend endpoint.</li>
-        <li><strong>Events</strong>: Filter by event name. Use <code>*</code> for all events.</li>
-        <li><strong>Secret</strong>: Optional. Used for signature verification.</li>
+        <li><strong>events</strong>: <code>"*"</code> (semua), nama persis (<code>order.paid</code>), atau prefix (<code>order.*</code>).</li>
+        <li><strong>secret</strong>: opsional; bila diisi, request ditandatangani <code>X-Gateway-Signature</code>.</li>
       </ul>
+      <h2 id="lifecycle">Lifecycle Events</h2>
+      <p>Selain event yang dipublish, gateway juga mengirim event lifecycle channel:</p>
+      <ul>
+        <li><code>channel_occupied</code> — subscriber pertama masuk ke sebuah channel.</li>
+        <li><code>channel_vacated</code> — subscriber terakhir keluar.</li>
+        <li><code>member_added</code> / <code>member_removed</code> — perubahan anggota presence channel.</li>
+      </ul>
+      <Callout type="info">Di deployment multi-node, <code>channel_occupied</code>/<code>channel_vacated</code> dihitung per-node (bisa terkirim lebih dari sekali).</Callout>
       <h2 id="payload">Payload Format</h2>
       <CodeBlock language="json">{`
-POST https://api.internal/webhook
+POST https://api.internal/hook
 Content-Type: application/json
 X-Gateway-Signature: sha256=abc123...
-X-Gateway-Timestamp: 1746432001
-X-Gateway-Event: order.paid
-X-Gateway-Channel: orders.99
-X-Gateway-App: app_a1b2c
 
 {
   "event": "order.paid",
   "channel": "orders.99",
-  "app_id": "app_a1b2c",
   "data": { "order_id": 99, "amount": 250000 },
   "ts": 1746432001842
 }
@@ -1155,20 +1161,10 @@ if (!hash_equals($expected, $signature)) {
 $data = json_decode($payload, true);
 // Process event...
       `}</CodeBlock>
-      <h2 id="retry-policy">Retry Policy</h2>
-      <table>
-        <thead><tr><th>Attempt</th><th>Delay</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td>Immediate</td></tr>
-          <tr><td>2</td><td>30 seconds</td></tr>
-          <tr><td>3</td><td>5 minutes</td></tr>
-          <tr><td>4</td><td>30 minutes</td></tr>
-          <tr><td>5</td><td>2 hours</td></tr>
-        </tbody>
-      </table>
-      <p>After 5 failed attempts, the delivery is marked dead. Manual retry available in the dashboard.</p>
+      <h2 id="delivery">Delivery & Retry</h2>
+      <p>Pengiriman bersifat async dengan timeout 5 detik. Bila gagal (timeout atau status non-2xx), gateway mencoba ulang <strong>satu kali</strong>. Hasil tiap delivery (status, http code, latency) dicatat dan dapat dilihat di dashboard.</p>
       <h2 id="monitoring">Monitoring</h2>
-      <p>Dashboard → <strong>Webhooks</strong> shows all delivery logs with status, latency, HTTP response code, and retry button for dead deliveries.</p>
+      <p>Dashboard → <strong>Webhooks</strong> menampilkan log delivery nyata (status, latency, HTTP code) dari Redis.</p>
     </>),
   },
 
@@ -2260,6 +2256,84 @@ channel.on("order.paid", (data) => render(data)); // termasuk event yang terlewa
       <Callout type="info">Token JWT tetap diterbitkan oleh backend Anda (lihat <a href="/docs/authentication">Bring Your Own JWT</a>). Jangan menaruh secret di halaman publik.</Callout>
       <h2 id="dashboard">Terlihat di Dashboard</h2>
       <p>Koneksi dan channel dari klien CDN/script tetap muncul realtime di dashboard (halaman <strong>Connections</strong> &amp; <strong>Overview</strong>) karena dashboard membaca data nyata dari endpoint <code>/stats</code> gateway.</p>
+    </>),
+  },
+  "client-events": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "rules", title: "Aturan" },
+      { id: "send", title: "Mengirim & Menerima" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>Client event memungkinkan satu klien mengirim event ke subscriber lain (mis. indikator "sedang mengetik") tanpa lewat backend. Event di-fanout oleh gateway ke anggota channel lain.</p>
+      <h2 id="rules">Aturan</h2>
+      <ul>
+        <li>Hanya pada channel <code>private-</code> atau <code>presence-</code>.</li>
+        <li>Nama event wajib diawali <code>client-</code>.</li>
+        <li>Pengirim harus sudah subscribe ke channel tersebut.</li>
+        <li>Terkena rate limit per-koneksi (anti-flood) dan batas ukuran payload.</li>
+      </ul>
+      <h2 id="send">Mengirim & Menerima</h2>
+      <CodeBlock language="js">{`
+const room = client.subscribe("presence-room.1", { auth: () => fetch("/socket-auth", { method: "POST", body: JSON.stringify({ socket_id: client.socketId, channel_name: "presence-room.1" }) }) });
+
+// Mengirim client event
+room.trigger("client-typing", { user: "alice" });
+
+// Menerima dari klien lain
+room.on("client-typing", (data) => console.log(data.user, "sedang mengetik"));
+      `}</CodeBlock>
+      <Callout type="info">Client event juga tercatat di halaman <a href="/docs/webhooks">Events</a> dashboard (source: client).</Callout>
+    </>),
+  },
+  "message-history": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "request", title: "Meminta History" },
+      { id: "config", title: "Konfigurasi" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>Setiap event yang dipublish disimpan ber-cap di Redis per channel, sehingga klien dapat me-replay pesan terakhir — berguna untuk menampilkan riwayat saat baru subscribe, atau memulihkan pesan yang terlewat.</p>
+      <h2 id="request">Meminta History</h2>
+      <CodeBlock language="js">{`
+const channel = client.subscribe("orders.99");
+
+// Dengarkan hasil replay
+channel.on("history", ({ messages }) => {
+  messages.forEach((m) => console.log(m.event, m.data));
+});
+
+// Minta sampai 20 pesan terakhir; opsional 'after' (ts) untuk hanya yang lebih baru
+channel.history(20);
+      `}</CodeBlock>
+      <Callout type="info">Lihat juga <a href="/docs/reliability">Reliability → Resume on Reconnect</a> yang otomatis memakai history untuk memulihkan event saat koneksi sempat putus.</Callout>
+      <h2 id="config">Konfigurasi</h2>
+      <ul>
+        <li><code>HISTORY_MAX</code> — jumlah pesan disimpan per channel (default 50).</li>
+        <li><code>HISTORY_TTL</code> — umur history dalam detik (default 86400).</li>
+      </ul>
+    </>),
+  },
+  "multi-app": {
+    toc: [
+      { id: "overview", title: "Overview" },
+      { id: "howto", title: "Cara Pakai" },
+      { id: "notes", title: "Catatan" },
+    ],
+    render: () => (<>
+      <h2 id="overview">Overview</h2>
+      <p>Beberapa aplikasi dapat berbagi satu gateway dengan isolasi namespace channel. Fitur ini <strong>opsional</strong> dan backward-compatible: tanpa klaim app, perilaku tetap global seperti biasa.</p>
+      <h2 id="howto">Cara Pakai</h2>
+      <p>Sertakan klaim <code>app</code> (atau <code>app_id</code>) pada JWT WebSocket. Koneksi tersebut hanya boleh subscribe channel dalam namespace app-nya — yaitu channel yang sama dengan <code>appID</code> atau berawalan <code>appID.</code> (termasuk varian <code>private-</code>/<code>presence-</code>).</p>
+      <CodeBlock language="js">{`
+// JWT dengan klaim app: "acme" (ditandatangani backend Anda)
+// OK   -> subscribe "acme.orders", "private-acme.user.1", "presence-acme.room"
+// TOLAK -> subscribe "other.x"  (FORBIDDEN_APP)
+      `}</CodeBlock>
+      <h2 id="notes">Catatan</h2>
+      <Callout type="info">Isolasi diberlakukan saat subscribe. Pastikan tiap app memakai prefiks namespace-nya sendiri. Lihat <a href="/docs/authentication">Bring Your Own JWT</a> untuk cara menerbitkan token.</Callout>
     </>),
   },
 };

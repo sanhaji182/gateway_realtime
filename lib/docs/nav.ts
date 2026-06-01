@@ -31,6 +31,8 @@ export const docsNav: DocsSection[] = [
       { title: "Channels", slug: "channels" },
       { title: "Publishing Events", slug: "publishing-events" },
       { title: "Subscribing to Events", slug: "subscribing-events" },
+      { title: "Client Events", slug: "client-events" },
+      { title: "Message History", slug: "message-history" },
       { title: "Presence Channels", slug: "presence" },
       { title: "Webhooks", slug: "webhooks" },
     ],
@@ -60,6 +62,7 @@ export const docsNav: DocsSection[] = [
     pages: [
       { title: "Security Model", slug: "security" },
       { title: "Reliability", slug: "reliability" },
+      { title: "Multi-App Isolation", slug: "multi-app" },
       { title: "Encrypted Channels", slug: "encrypted-channels" },
       { title: "Pusher Compatibility", slug: "pusher-compat" },
       { title: "SaaS Extensions", slug: "saas-extensions" },
